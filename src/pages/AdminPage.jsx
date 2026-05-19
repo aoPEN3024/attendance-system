@@ -336,12 +336,13 @@ export default function AdminPage() {
     );
 
     // 有給付与
+    // 有給付与
     if (staffView === 'leave') return (
       <div style={s.page}>
         <div style={s.card}>
           <div style={s.topbar}>
             <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.backBtn}>‹ 戻る</button>
-            <div style={s.topTitle}>有給付与</div>
+            <div style={s.topTitle}>有給管理</div>
             <span style={s.adminBadge}>管理者</span>
           </div>
           <div style={{ padding: '12px 16px' }}>
@@ -353,18 +354,35 @@ export default function AdminPage() {
             ) : (
               <div style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>全員に一括付与</div>
             )}
-            <div style={s.flabel}>付与日数</div>
+            <div style={s.flabel}>種別</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+              {[{v:'付与',l:'付与'},{v:'減算',l:'減算（修正）'}].map(({v,l}) => (
+                <button key={v} onClick={() => setStaffFields(f => ({...f, leaveType: v}))}
+                  style={{ padding: '9px 0', fontSize: 13, fontWeight: 500, borderRadius: 8, cursor: 'pointer', border: '0.5px solid', background: (staffFields.leaveType || '付与') === v ? '#E6F1FB' : 'white', borderColor: (staffFields.leaveType || '付与') === v ? '#185FA5' : '#ddd', color: (staffFields.leaveType || '付与') === v ? '#185FA5' : '#888' }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            <div style={s.flabel}>日数</div>
             <input type="number" value={leaveGrant} onChange={e => setLeaveGrant(e.target.value)} placeholder="例: 10" min="1" style={{ ...s.timeInput, marginBottom: 12 }} />
             {staffMessage && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: staffMessage.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: staffMessage.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{staffMessage}</div>}
             <button onClick={async () => {
               setStaffMessage('');
               try {
-                await api.leaveGrant(selectedStaff?.employeeId || '', Number(leaveGrant), '手動付与', !selectedStaff);
-                setStaffMessage('付与しました');
+                const isDeduct = (staffFields.leaveType || '付与') === '減算';
+                await api.leaveGrant(
+                  selectedStaff?.employeeId || '',
+                  isDeduct ? -Number(leaveGrant) : Number(leaveGrant),
+                  isDeduct ? '手動減算' : '手動付与',
+                  !selectedStaff
+                );
+                setStaffMessage(isDeduct ? '減算しました' : '付与しました');
                 await loadStaff();
                 setTimeout(() => { setStaffView('list'); setStaffMessage(''); }, 1200);
               } catch(err) { setStaffMessage('エラー: ' + err.message); }
-            }} style={s.saveBtn}>付与する</button>
+            }} style={s.saveBtn}>
+              {(staffFields.leaveType || '付与') === '減算' ? '減算する' : '付与する'}
+            </button>
             <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.cancelBtn}>キャンセル</button>
           </div>
         </div>
