@@ -75,9 +75,11 @@ export const api = {
   substituteBalance: () =>
     gasRequest({ action: 'attendance/substitute/balance' }),
 
-  adminExportCsv: (yearMonth) => {
+  adminExportCsv: (yearMonth, type, targetEmployeeId) => {
     const token = localStorage.getItem('token');
-    const query = new URLSearchParams({ action: 'admin/export/csv', token, yearMonth }).toString();
+    const params = { action: 'admin/export/csv', token, yearMonth, type };
+    if (targetEmployeeId) params.targetEmployeeId = targetEmployeeId;
+    const query = new URLSearchParams(params).toString();
     window.open(`${GAS_URL}?${query}`);
   },
 

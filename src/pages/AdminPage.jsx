@@ -40,6 +40,8 @@ export default function AdminPage() {
   const [empData, setEmpData]           = useState(null);
   const [editRow, setEditRow]           = useState(null);
   const [editFields, setEditFields]     = useState({});
+  const [editSites, setEditSites] = useState([{siteId:'',minutes:''},{siteId:'',minutes:''},{siteId:'',minutes:''}]);
+  const [siteOptions, setSiteOptions] = useState([]);
   const [editBreaks, setEditBreaks]     = useState({ am: false, noon: false, pm: false });
   const [memo, setMemo]                 = useState('');
   const [message, setMessage]           = useState('');
@@ -63,6 +65,9 @@ export default function AdminPage() {
   useEffect(() => { loadEmployees(); }, [yearMonth]);
   useEffect(() => { if (mainTab === 'staff') loadStaff(); }, [mainTab]);
   useEffect(() => { if (mainTab === 'sites') loadSites(); }, [mainTab]);
+  useEffect(() => {
+    api.sites().then(setSiteOptions).catch(() => {});
+  }, []);
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -114,8 +119,13 @@ export default function AdminPage() {
 
   const openEdit = (row) => {
     setEditRow(row);
-    setEditFields({ clockIn: row.clockIn || '', clockOut: row.clockOut || '', siteId: row.siteId || '' });
+    setEditFields({ clockIn: row.clockIn || '', clockOut: row.clockOut || '' });
     setEditBreaks({ am: row.breaks?.am || false, noon: row.breaks?.noon || false, pm: row.breaks?.pm || false });
+    setEditSites([
+      { siteId: row.site1Id || '', minutes: row.site1Min || '' },
+      { siteId: row.site2Id || '', minutes: row.site2Min || '' },
+      { siteId: row.site3Id || '', minutes: row.site3Min || '' },
+    ]);
     setMemo('');
     setMessage('');
     setView('edit');
@@ -127,7 +137,12 @@ export default function AdminPage() {
       await api.adminEdit(selectedEmp.employeeId, editRow.date, {
         clockIn:   editFields.clockIn,
         clockOut:  editFields.clockOut,
-        siteId:    editFields.siteId,
+        site1Id:   editSites[0]?.siteId || '',
+        site1Min:  editSites[0]?.minutes || 0,
+        site2Id:   editSites[1]?.siteId || '',
+        site2Min:  editSites[1]?.minutes || 0,
+        site3Id:   editSites[2]?.siteId || '',
+        site3Min:  editSites[2]?.minutes || 0,
         breakAm:   editBreaks.am   ? 'true' : 'false',
         breakNoon: editBreaks.noon ? 'true' : 'false',
         breakPm:   editBreaks.pm   ? 'true' : 'false',
@@ -190,6 +205,32 @@ export default function AdminPage() {
           <div style={{ fontSize: 12, color: '#A05A00', background: '#FFF4E5', borderRadius: 7, padding: '7px 10px', marginBottom: 12 }}>
             管理者による直接編集（申請不要・即時反映）
           </div>
+          <div style={s.flabel}>現場・滞在時間</div>
+          {editSites.map((site, index) => (
+            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 6, marginBottom: 6 }}>
+              <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 10px', background: 'white', display: 'flex', alignItems: 'center' }}>
+                <select
+                  value={site.siteId}
+                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, siteId: e.target.value } : s))}
+                  style={{ flex: 1, border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none' }}
+                >
+                  <option value="">現場{index + 1}</option>
+                  {siteOptions.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
+                </select>
+              </div>
+              <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 6px', background: 'white' }}>
+                <input
+                  type="number"
+                  value={site.minutes}
+                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, minutes: e.target.value } : s))}
+                  placeholder="分"
+                  min="0"
+                  style={{ width: '100%', border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', textAlign: 'center' }}
+                />
+              </div>
+            </div>
+          ))}
+          <div style={{ fontSize: 11, color: '#aaa', textAlign: 'right', marginBottom: 12 }}>滞在時間は分単位で入力</div>
           <div style={s.flabel}>出勤・退勤時刻</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
             <input type="time" value={editFields.clockIn} onChange={e => setEditFields(f => ({...f, clockIn: e.target.value}))} style={s.timeInput} />
@@ -663,20 +704,32 @@ export default function AdminPage() {
               }}
               style={{ padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#FFF4E5', color: '#A05A00', border: '0.5px solid #F0C97A', borderRadius: 8, cursor: 'pointer' }}
             >この月を締める</button>
-            <button onClick={() => api.adminExportCsv(yearMonth)}
-              style={{ padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 8, cursor: 'pointer' }}
-            >CSV出力</button>
+            <button
+              onClick={async () => {
+                if (!window.confirm(`${yearMonth.replace('-','年')}月の締めを解除しますか？`)) return;
+                try {
+                  const result = await api.adminOpen(yearMonth);
+                  alert(result.message);
+                } catch(err) { alert('エラー：' + err.message); }
+              }}
+              style={{ padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 8, cursor: 'pointer' }}
+            >締めを解除する</button>
           </div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 6 }}>CSV出力</div>
           <button
-            onClick={async () => {
-              if (!window.confirm(`${yearMonth.replace('-','年')}月の締めを解除しますか？`)) return;
-              try {
-                const result = await api.adminOpen(yearMonth);
-                alert(result.message);
-              } catch(err) { alert('エラー：' + err.message); }
-            }}
-            style={{ width: '100%', padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 8, cursor: 'pointer' }}
-          >締めを解除する</button>
+            onClick={() => api.adminExportCsv(yearMonth, 'summary')}
+            style={{ width: '100%', padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 8, cursor: 'pointer', marginBottom: 6 }}
+          >全体集計CSV</button>
+          <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>個人別CSV</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {employees.map(emp => (
+              <button
+                key={emp.employeeId}
+                onClick={() => api.adminExportCsv(yearMonth, 'individual', emp.employeeId)}
+                style={{ width: '100%', padding: '8px 0', fontSize: 12, fontWeight: 500, background: '#E6F1FB', color: '#185FA5', border: '0.5px solid #B5D4F4', borderRadius: 8, cursor: 'pointer' }}
+              >{emp.name}</button>
+            ))}
+          </div>
         </div>
 
         <div style={{ height: 20 }} />
