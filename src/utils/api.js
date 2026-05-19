@@ -57,13 +57,16 @@ export const api = {
     gasRequest({ action: 'admin/open', yearMonth }),
 
   sites: () => gasRequest({ action: 'sites/list' }),
+
   substituteBalance: () =>
     gasRequest({ action: 'attendance/substitute/balance' }),
+
   adminExportCsv: (yearMonth) => {
     const token = localStorage.getItem('token');
     const query = new URLSearchParams({ action: 'admin/export/csv', token, yearMonth }).toString();
     window.open(`${GAS_URL}?${query}`);
   },
+
   adminEmployeesList: () =>
     gasRequest({ action: 'admin/employees/list' }),
 
@@ -78,9 +81,8 @@ export const api = {
 
   adminEmployeeToggle: (employeeId) =>
     gasRequest({ action: 'admin/employee/toggle', employeeId }),
-};
 
-adminSitesList: () =>
+  adminSitesList: () =>
     gasRequest({ action: 'admin/sites/list' }),
 
   adminSiteAdd: (siteId, siteName) =>
@@ -91,3 +93,4 @@ adminSitesList: () =>
 
   adminSiteToggle: (siteId) =>
     gasRequest({ action: 'admin/site/toggle', siteId }),
+};
