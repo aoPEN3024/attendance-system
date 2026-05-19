@@ -511,7 +511,9 @@ export default function AdminPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
                 <button onClick={async () => {
                   try {
+                    alert('ボタン押した');
                     const result = await api.payslipUpload(staff.employeeId);
+                    alert('result: ' + JSON.stringify(result));
                     window.open(result.folderUrl, '_blank');
                   } catch(err) { alert('エラー: ' + err.message); }
                 }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', cursor: 'pointer' }}>
