@@ -16,16 +16,16 @@ const formatDateJp = (dateStr) => {
 
 const statusBadge = (status) => {
   const map = {
-    confirmed:     { label: '確定',      bg: '#E6F7EE', color: '#1A7A4A' },
-    pending:       { label: '申請中',    bg: '#FCEBEB', color: '#A32D2D' },
-    leave:         { label: '有給',      bg: '#E6F1FB', color: '#185FA5' },
-    leave_pending: { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
-    rejected:      { label: '差戻し',    bg: '#FCEBEB', color: '#A32D2D' },
-    substitute_work:    { label: '振替出勤', bg: '#FFF4E5', color: '#A05A00' },
-    substitute_holiday: { label: '振替休日', bg: '#E6F1FB', color: '#185FA5' },
+    confirmed:          { label: '確定',      bg: '#E6F7EE', color: '#1A7A4A' },
+    pending:            { label: '申請中',    bg: '#FCEBEB', color: '#A32D2D' },
+    leave:              { label: '有給',      bg: '#E6F1FB', color: '#185FA5' },
+    leave_pending:      { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
+    rejected:           { label: '差戻し',    bg: '#FCEBEB', color: '#A32D2D' },
+    substitute_work:    { label: '振替出勤',  bg: '#FFF4E5', color: '#A05A00' },
+    substitute_holiday: { label: '振替休日',  bg: '#E6F1FB', color: '#185FA5' },
   };
-  const s = map[status] || { label: status, bg: '#f5f5f5', color: '#888' };
-  return <span style={{ fontSize: 10, borderRadius: 3, padding: '1px 5px', background: s.bg, color: s.color }}>{s.label}</span>;
+  const sv = map[status] || { label: status, bg: '#f5f5f5', color: '#888' };
+  return <span style={{ fontSize: 10, borderRadius: 3, padding: '1px 5px', background: sv.bg, color: sv.color }}>{sv.label}</span>;
 };
 
 export default function AdminPage() {
@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [totalPending, setTotalPending] = useState(0);
   const [loading, setLoading]           = useState(false);
   const [view, setView]                 = useState('list');
+  const [mainTab, setMainTab]           = useState('attendance'); // 'attendance' | 'staff'
   const [selectedEmp, setSelectedEmp]   = useState(null);
   const [empData, setEmpData]           = useState(null);
   const [editRow, setEditRow]           = useState(null);
@@ -43,7 +44,16 @@ export default function AdminPage() {
   const [memo, setMemo]                 = useState('');
   const [message, setMessage]           = useState('');
 
+  // 社員管理用
+  const [staffList, setStaffList]       = useState([]);
+  const [staffView, setStaffView]       = useState('list'); // 'list' | 'add' | 'edit' | 'password' | 'leave'
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [staffFields, setStaffFields]   = useState({});
+  const [staffMessage, setStaffMessage] = useState('');
+  const [leaveGrant, setLeaveGrant]     = useState('');
+
   useEffect(() => { loadEmployees(); }, [yearMonth]);
+  useEffect(() => { if (mainTab === 'staff') loadStaff(); }, [mainTab]);
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -55,6 +65,15 @@ export default function AdminPage() {
       console.log('社員一覧取得エラー:', err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStaff = async () => {
+    try {
+      const result = await api.adminEmployeesList();
+      setStaffList(result);
+    } catch (err) {
+      console.log('社員マスタ取得エラー:', err.message);
     }
   };
 
@@ -116,11 +135,7 @@ export default function AdminPage() {
 
   const renderApplyDetail = (row) => {
     if (row.status === 'leave_pending') {
-      return (
-        <div style={{ fontSize: 12, color: '#185FA5', background: '#E6F1FB', borderRadius: 6, padding: '6px 10px', marginBottom: 6 }}>
-          有給申請
-        </div>
-      );
+      return <div style={{ fontSize: 12, color: '#185FA5', background: '#E6F1FB', borderRadius: 6, padding: '6px 10px', marginBottom: 6 }}>有給申請</div>;
     }
     const match = row.reason && row.reason.match(/\[申請内容:(.*)\]/);
     if (!match) return null;
@@ -137,7 +152,7 @@ export default function AdminPage() {
     } catch(e) { return null; }
   };
 
-  // ── 編集画面 ──────────────────────────────────────────
+  // ── 打刻編集画面 ──────────────────────────────────────
   if (view === 'edit' && editRow) return (
     <div style={s.page}>
       <div style={s.card}>
@@ -183,7 +198,6 @@ export default function AdminPage() {
           <div style={s.topTitle}>{selectedEmp?.name} — {yearMonth.replace('-','年')}月</div>
           <span style={s.adminBadge}>管理者</span>
         </div>
-
         {empData && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5, padding: '10px 14px', borderBottom: '0.5px solid #eee' }}>
             {[
@@ -198,19 +212,15 @@ export default function AdminPage() {
             ))}
           </div>
         )}
-
         <div style={{ display: 'flex', alignItems: 'center', padding: '7px 14px', borderBottom: '0.5px solid #eee' }}>
           <button onClick={() => changeMonth(-1)} style={s.monthBtn}>‹</button>
           <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 500 }}>{yearMonth.replace('-','年')}月</div>
           <button onClick={() => changeMonth(1)} style={s.monthBtn}>›</button>
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px', gap: 3, padding: '5px 14px', background: '#f5f5f5', borderBottom: '0.5px solid #eee' }}>
           {['日付','出勤','退勤','実働','区分'].map(h => <span key={h} style={{ fontSize: 10, color: '#aaa' }}>{h}</span>)}
         </div>
-
         {!empData && <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
-
         {empData?.rows.map(row => (
           <div key={row.logId}>
             <div onClick={() => openEdit(row)} style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px', gap: 3, padding: '9px 14px', borderBottom: row.status === 'pending' || row.status === 'leave_pending' ? 'none' : '0.5px solid #eee', alignItems: 'center', cursor: 'pointer' }}>
@@ -223,11 +233,7 @@ export default function AdminPage() {
             {(row.status === 'pending' || row.status === 'leave_pending') && (
               <div style={{ padding: '6px 14px 10px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
                 {renderApplyDetail(row)}
-                {row.reason && (
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>
-                    {row.reason.replace(/\s*\[申請内容:.*\]/, '').trim()}
-                  </div>
-                )}
+                {row.reason && <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>{row.reason.replace(/\s*\[申請内容:.*\]/, '').trim()}</div>}
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={() => handleApprove(row.logId, 'approved')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}>承認</button>
                   <button onClick={() => handleApprove(row.logId, 'rejected')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 6, cursor: 'pointer' }}>差戻し</button>
@@ -236,13 +242,206 @@ export default function AdminPage() {
             )}
           </div>
         ))}
-
         <div style={{ height: 20 }} />
       </div>
     </div>
   );
 
-  // ── 社員一覧画面 ──────────────────────────────────────
+  // ── 社員管理サブ画面 ──────────────────────────────────
+  if (mainTab === 'staff') {
+
+    // 社員追加・編集フォーム
+    if (staffView === 'add' || staffView === 'edit') {
+      const isAdd = staffView === 'add';
+      return (
+        <div style={s.page}>
+          <div style={s.card}>
+            <div style={s.topbar}>
+              <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.backBtn}>‹ 戻る</button>
+              <div style={s.topTitle}>{isAdd ? '社員追加' : '社員編集'}</div>
+              <span style={s.adminBadge}>管理者</span>
+            </div>
+            <div style={{ padding: '12px 16px' }}>
+              {isAdd && (
+                <>
+                  <div style={s.flabel}>社員ID（変更不可）</div>
+                  <input value={staffFields.employeeId || ''} onChange={e => setStaffFields(f => ({...f, employeeId: e.target.value}))} placeholder="例: EMP004" style={{ ...s.timeInput, marginBottom: 12 }} />
+                </>
+              )}
+              <div style={s.flabel}>氏名</div>
+              <input value={staffFields.name || ''} onChange={e => setStaffFields(f => ({...f, name: e.target.value}))} placeholder="例: 山田 太郎" style={{ ...s.timeInput, marginBottom: 12 }} />
+              <div style={s.flabel}>権限</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                {[{v:'general',l:'一般'},{v:'admin',l:'管理者'}].map(({v,l}) => (
+                  <button key={v} onClick={() => setStaffFields(f => ({...f, role: v}))}
+                    style={{ padding: '9px 0', fontSize: 13, fontWeight: 500, borderRadius: 8, cursor: 'pointer', border: '0.5px solid', background: staffFields.role === v ? '#E6F1FB' : 'white', borderColor: staffFields.role === v ? '#185FA5' : '#ddd', color: staffFields.role === v ? '#185FA5' : '#888' }}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <div style={s.flabel}>入社日</div>
+              <input type="date" value={staffFields.hireDate || ''} onChange={e => setStaffFields(f => ({...f, hireDate: e.target.value}))} style={{ ...s.timeInput, marginBottom: 12 }} />
+              {isAdd && (
+                <>
+                  <div style={s.flabel}>初期パスワード</div>
+                  <input type="password" value={staffFields.password || ''} onChange={e => setStaffFields(f => ({...f, password: e.target.value}))} placeholder="初期パスワードを入力" style={{ ...s.timeInput, marginBottom: 12 }} />
+                </>
+              )}
+              {staffMessage && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: staffMessage.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: staffMessage.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{staffMessage}</div>}
+              <button onClick={async () => {
+                setStaffMessage('');
+                try {
+                  if (isAdd) {
+                    await api.adminEmployeeAdd(staffFields.employeeId, staffFields.name, staffFields.password, staffFields.role || 'general', staffFields.hireDate);
+                  } else {
+                    await api.adminEmployeeEdit(selectedStaff.employeeId, staffFields.name, staffFields.role, staffFields.hireDate);
+                  }
+                  setStaffMessage(isAdd ? '追加しました' : '更新しました');
+                  await loadStaff();
+                  setTimeout(() => { setStaffView('list'); setStaffMessage(''); }, 1200);
+                } catch(err) { setStaffMessage('エラー: ' + err.message); }
+              }} style={s.saveBtn}>保存する</button>
+              <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.cancelBtn}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // パスワード変更
+    if (staffView === 'password') return (
+      <div style={s.page}>
+        <div style={s.card}>
+          <div style={s.topbar}>
+            <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.backBtn}>‹ 戻る</button>
+            <div style={s.topTitle}>{selectedStaff?.name} — PW変更</div>
+            <span style={s.adminBadge}>管理者</span>
+          </div>
+          <div style={{ padding: '12px 16px' }}>
+            <div style={s.flabel}>新しいパスワード</div>
+            <input type="password" value={staffFields.newPassword || ''} onChange={e => setStaffFields(f => ({...f, newPassword: e.target.value}))} placeholder="新しいパスワードを入力" style={{ ...s.timeInput, marginBottom: 12 }} />
+            {staffMessage && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: staffMessage.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: staffMessage.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{staffMessage}</div>}
+            <button onClick={async () => {
+              setStaffMessage('');
+              try {
+                await api.adminEmployeePassword(selectedStaff.employeeId, staffFields.newPassword);
+                setStaffMessage('パスワードを変更しました');
+                setTimeout(() => { setStaffView('list'); setStaffMessage(''); }, 1200);
+              } catch(err) { setStaffMessage('エラー: ' + err.message); }
+            }} style={s.saveBtn}>変更する</button>
+            <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.cancelBtn}>キャンセル</button>
+          </div>
+        </div>
+      </div>
+    );
+
+    // 有給付与
+    if (staffView === 'leave') return (
+      <div style={s.page}>
+        <div style={s.card}>
+          <div style={s.topbar}>
+            <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.backBtn}>‹ 戻る</button>
+            <div style={s.topTitle}>有給付与</div>
+            <span style={s.adminBadge}>管理者</span>
+          </div>
+          <div style={{ padding: '12px 16px' }}>
+            {selectedStaff ? (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#222', marginBottom: 4 }}>{selectedStaff.name}</div>
+                <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>現在の有給残日数：{selectedStaff.leaveBalance}日</div>
+              </>
+            ) : (
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>全員に一括付与</div>
+            )}
+            <div style={s.flabel}>付与日数</div>
+            <input type="number" value={leaveGrant} onChange={e => setLeaveGrant(e.target.value)} placeholder="例: 10" min="1" style={{ ...s.timeInput, marginBottom: 12 }} />
+            {staffMessage && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: staffMessage.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: staffMessage.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{staffMessage}</div>}
+            <button onClick={async () => {
+              setStaffMessage('');
+              try {
+                await api.leaveGrant(selectedStaff?.employeeId || '', Number(leaveGrant), '手動付与', !selectedStaff);
+                setStaffMessage('付与しました');
+                await loadStaff();
+                setTimeout(() => { setStaffView('list'); setStaffMessage(''); }, 1200);
+              } catch(err) { setStaffMessage('エラー: ' + err.message); }
+            }} style={s.saveBtn}>付与する</button>
+            <button onClick={() => { setStaffView('list'); setStaffMessage(''); }} style={s.cancelBtn}>キャンセル</button>
+          </div>
+        </div>
+      </div>
+    );
+
+    // 社員管理一覧
+    return (
+      <div style={s.page}>
+        <div style={s.card}>
+          <div style={s.topbar}>
+            <div style={s.topTitle}>社員管理</div>
+            <span style={{ fontSize: 12, color: '#888', marginRight: 8 }}>{user?.name}</span>
+            <button onClick={logout} style={{ border: 'none', background: 'none', fontSize: 13, color: '#888', cursor: 'pointer' }}>ログアウト</button>
+          </div>
+
+          {/* タブ */}
+          <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
+            {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員管理'}].map(({k,l}) => (
+              <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
+            ))}
+          </div>
+
+          <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '0.5px solid #eee' }}>
+            <div style={{ fontSize: 12, color: '#888' }}>{staffList.length}名登録中</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => { setSelectedStaff(null); setLeaveGrant(''); setStaffMessage(''); setStaffView('leave'); }}
+                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid #7DC4A0', background: '#E6F7EE', color: '#1A7A4A', cursor: 'pointer' }}>
+                一括有給付与
+              </button>
+              <button onClick={() => { setStaffFields({ role: 'general' }); setStaffMessage(''); setStaffView('add'); }}
+                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#185FA5', cursor: 'pointer' }}>
+                ＋ 社員追加
+              </button>
+            </div>
+          </div>
+
+          {staffList.map(staff => (
+            <div key={staff.employeeId} style={{ padding: '11px 14px', borderBottom: '0.5px solid #eee', opacity: staff.active ? 1 : 0.5 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: staff.active ? '#E6F1FB' : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: staff.active ? '#185FA5' : '#aaa', flexShrink: 0 }}>
+                  {staff.name.slice(0,2)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#222' }}>{staff.name}</div>
+                  <div style={{ fontSize: 11, color: '#888' }}>
+                    {staff.employeeId}　{staff.role === 'admin' ? '管理者' : '一般'}　有給残{staff.leaveBalance}日
+                    {!staff.active && <span style={{ color: '#A32D2D', marginLeft: 6 }}>無効</span>}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
+                <button onClick={() => { setSelectedStaff(staff); setStaffFields({ name: staff.name, role: staff.role, hireDate: staff.hireDate }); setStaffMessage(''); setStaffView('edit'); }}
+                  style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>編集</button>
+                <button onClick={() => { setSelectedStaff(staff); setStaffFields({}); setStaffMessage(''); setStaffView('password'); }}
+                  style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>PW変更</button>
+                <button onClick={() => { setSelectedStaff(staff); setLeaveGrant(''); setStaffMessage(''); setStaffView('leave'); }}
+                  style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #7DC4A0', background: '#E6F7EE', color: '#1A7A4A', cursor: 'pointer' }}>有給付与</button>
+                <button onClick={async () => {
+                  if (!window.confirm(`${staff.name}を${staff.active ? '無効' : '有効'}にしますか？`)) return;
+                  try {
+                    await api.adminEmployeeToggle(staff.employeeId);
+                    await loadStaff();
+                  } catch(err) { alert('エラー: ' + err.message); }
+                }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: `0.5px solid ${staff.active ? '#F09595' : '#7DC4A0'}`, background: staff.active ? '#FCEBEB' : '#E6F7EE', color: staff.active ? '#A32D2D' : '#1A7A4A', cursor: 'pointer' }}>
+                  {staff.active ? '無効化' : '有効化'}
+                </button>
+              </div>
+            </div>
+          ))}
+          <div style={{ height: 20 }} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── 勤怠管理一覧画面 ──────────────────────────────────
   return (
     <div style={s.page}>
       <div style={s.card}>
@@ -250,6 +449,13 @@ export default function AdminPage() {
           <div style={s.topTitle}>管理者画面</div>
           <span style={{ fontSize: 12, color: '#888', marginRight: 8 }}>{user?.name}</span>
           <button onClick={logout} style={{ border: 'none', background: 'none', fontSize: 13, color: '#888', cursor: 'pointer' }}>ログアウト</button>
+        </div>
+
+        {/* タブ */}
+        <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
+          {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員管理'}].map(({k,l}) => (
+            <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
+          ))}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', borderBottom: '0.5px solid #eee' }}>
@@ -286,7 +492,8 @@ export default function AdminPage() {
             <i className="ti ti-chevron-right" style={{ fontSize: 16, color: '#ccc' }} />
           </div>
         ))}
-<div style={{ margin: '12px 14px 0' }}>
+
+        <div style={{ margin: '12px 14px 0' }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 8 }}>月次締め・CSV出力</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
             <button
@@ -295,20 +502,13 @@ export default function AdminPage() {
                 try {
                   const result = await api.adminClose(yearMonth);
                   alert(result.message + '\n支払日：' + result.payDate);
-                } catch(err) {
-                  alert('エラー：' + err.message);
-                }
+                } catch(err) { alert('エラー：' + err.message); }
               }}
               style={{ padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#FFF4E5', color: '#A05A00', border: '0.5px solid #F0C97A', borderRadius: 8, cursor: 'pointer' }}
-            >
-              この月を締める
-            </button>
-            <button
-              onClick={() => api.adminExportCsv(yearMonth)}
+            >この月を締める</button>
+            <button onClick={() => api.adminExportCsv(yearMonth)}
               style={{ padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 8, cursor: 'pointer' }}
-            >
-              CSV出力
-            </button>
+            >CSV出力</button>
           </div>
           <button
             onClick={async () => {
@@ -316,14 +516,10 @@ export default function AdminPage() {
               try {
                 const result = await api.adminOpen(yearMonth);
                 alert(result.message);
-              } catch(err) {
-                alert('エラー：' + err.message);
-              }
+              } catch(err) { alert('エラー：' + err.message); }
             }}
             style={{ width: '100%', padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 8, cursor: 'pointer' }}
-          >
-            締めを解除する
-          </button>
+          >締めを解除する</button>
         </div>
 
         <div style={{ height: 20 }} />
