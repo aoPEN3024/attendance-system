@@ -51,6 +51,8 @@ export default function MyPage() {
   const [loading, setLoading]       = useState(false);
   const [editRow, setEditRow]       = useState(null);
   const [editFields, setEditFields] = useState({});
+  const [editSites, setEditSites]   = useState([{siteId:'',minutes:''},{siteId:'',minutes:''},{siteId:'',minutes:''}]);
+  const [siteOptions, setSiteOptions] = useState([]);
   const [editBreaks, setEditBreaks] = useState({ am: false, noon: false, pm: false });
   const [holMode, setHolMode]       = useState(false);
   const [subMode, setSubMode]       = useState(null);
@@ -58,6 +60,9 @@ export default function MyPage() {
   const [message, setMessage]       = useState('');
 
   useEffect(() => { loadMonthly(); }, [yearMonth]);
+  useEffect(() => {
+    api.sites().then(setSiteOptions).catch(() => {});
+  }, []);
 
   const loadMonthly = async () => {
     setLoading(true);
@@ -85,8 +90,13 @@ export default function MyPage() {
 
   const openEdit = (date, row) => {
     setEditRow({ date, ...(row || {}) });
-    setEditFields({ clockIn: row?.clockIn || '', clockOut: row?.clockOut || '', siteId: row?.siteId || '' });
+    setEditFields({ clockIn: row?.clockIn || '', clockOut: row?.clockOut || '' });
     setEditBreaks({ am: row?.breaks?.am || false, noon: row?.breaks?.noon || false, pm: row?.breaks?.pm || false });
+    setEditSites([
+      { siteId: row?.site1Id || '', minutes: row?.site1Min || '' },
+      { siteId: row?.site2Id || '', minutes: row?.site2Min || '' },
+      { siteId: row?.site3Id || '', minutes: row?.site3Min || '' },
+    ]);
     setHolMode(row?.status === 'leave' || row?.status === 'leave_pending');
     setSubMode(null);
     setReason('');
@@ -103,21 +113,21 @@ export default function MyPage() {
         setMessage('有給申請を送信しました');
       } else if (subMode === 'work') {
         await api.apply(
-          editRow.date, editFields.clockIn, editFields.clockOut, editFields.siteId,
+          editRow.date, editFields.clockIn, editFields.clockOut, editSites,
           { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
           reason || '振替出勤申請', 'substitute_work'
         );
         setMessage('振替出勤申請を送信しました');
       } else if (subMode === 'holiday') {
         await api.apply(
-          editRow.date, '00:00', '00:00', editFields.siteId,
+          editRow.date, '00:00', '00:00', editSites,
           { breakAm: 'false', breakNoon: 'false', breakPm: 'false' },
           reason || '振替休日申請', 'substitute_holiday'
         );
         setMessage('振替休日申請を送信しました');
       } else {
         await api.apply(
-          editRow.date, editFields.clockIn, editFields.clockOut, editFields.siteId,
+          editRow.date, editFields.clockIn, editFields.clockOut, editSites,
           { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
           reason || '修正申請'
         );
@@ -139,6 +149,32 @@ export default function MyPage() {
           <div style={s.topTitle}>{formatDateJp(editRow.date)} 編集</div>
         </div>
         <div style={{ padding: '12px 16px' }}>
+          <div style={s.flabel}>現場・滞在時間</div>
+          {editSites.map((site, index) => (
+            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 6, marginBottom: 6, opacity: (holMode || subMode === 'holiday') ? 0.35 : 1, pointerEvents: (holMode || subMode === 'holiday') ? 'none' : 'auto' }}>
+              <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 10px', background: 'white', display: 'flex', alignItems: 'center' }}>
+                <select
+                  value={site.siteId}
+                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, siteId: e.target.value } : s))}
+                  style={{ flex: 1, border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none' }}
+                >
+                  <option value="">現場{index + 1}</option>
+                  {siteOptions.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
+                </select>
+              </div>
+              <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 6px', background: 'white' }}>
+                <input
+                  type="number"
+                  value={site.minutes}
+                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, minutes: e.target.value } : s))}
+                  placeholder="分"
+                  min="0"
+                  style={{ width: '100%', border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', textAlign: 'center' }}
+                />
+              </div>
+            </div>
+          ))}
+          <div style={{ fontSize: 11, color: '#aaa', textAlign: 'right', marginBottom: 12 }}>滞在時間は分単位で入力</div>
           <div style={s.flabel}>出勤・退勤時刻</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
             <input type="time" value={editFields.clockIn} onChange={e => setEditFields(f => ({...f, clockIn: e.target.value}))} style={s.timeInput} disabled={holMode || subMode === 'holiday'} />
