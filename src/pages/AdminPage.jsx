@@ -521,6 +521,13 @@ export default function AdminPage() {
     }
 
     // 現場管理一覧
+    const [siteSearch, setSiteSearch] = useState('');
+    const sortedSites = [
+      ...siteList.filter(s => s.active),
+      ...siteList.filter(s => !s.active),
+    ].filter(s =>
+      s.siteName.includes(siteSearch) || s.siteId.includes(siteSearch)
+    );
     return (
       <div style={s.page}>
         <div style={s.card}>
@@ -544,8 +551,16 @@ export default function AdminPage() {
               ＋ 現場追加
             </button>
           </div>
+          <div style={{ padding: '8px 14px', borderBottom: '0.5px solid #eee' }}>
+            <input
+              value={siteSearch}
+              onChange={e => setSiteSearch(e.target.value)}
+              placeholder="現場名・IDで検索..."
+              style={{ width: '100%', border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 10px', fontSize: 13, boxSizing: 'border-box', outline: 'none' }}
+            />
+          </div>
 
-          {siteList.map(site => (
+          {sortedSites.map(site => (
             <div key={site.siteId} style={{ padding: '11px 14px', borderBottom: '0.5px solid #eee', opacity: site.active ? 1 : 0.5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: site.active ? '#E6F1FB' : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: site.active ? '#185FA5' : '#aaa', flexShrink: 0 }}>
