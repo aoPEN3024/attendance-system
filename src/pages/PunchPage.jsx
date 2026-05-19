@@ -37,7 +37,7 @@ export default function PunchPage() {
 const loadTodayData = async () => {
   try {
     const data = await api.today(today());
-    console.log('今日のデータ:', data);
+
     if (data.workMinutes) {
       const h = Math.floor(data.workMinutes / 60);
       const m = data.workMinutes % 60;
@@ -48,7 +48,7 @@ const loadTodayData = async () => {
     setTodayData(data);
     if (data.siteId) setSiteId(data.siteId);
     if (data.breaks) {
-      console.log('休憩データ:', data.breaks);
+      
       setBreaks({
         breakAm:   data.breaks.am   === true,
         breakNoon: data.breaks.noon === true,
@@ -63,7 +63,7 @@ const loadTodayData = async () => {
   const loadSites = async () => {
   try {
     const data = await api.sites();
-    console.log('現場データ:', data);
+    
     setSites(data);
   } catch (err) {
     console.log('現場取得エラー:', err.message);
@@ -94,7 +94,7 @@ const loadTodayData = async () => {
 const toggleBreak = async (key) => {
   const newBreaks = { ...breaks, [key]: !breaks[key] };
   setBreaks(newBreaks);
-  console.log('休憩ボタン押した:', key, newBreaks);
+  
 
   if (todayData?.clockIn) {
     try {
@@ -109,13 +109,13 @@ const toggleBreak = async (key) => {
           breakPm:   newBreaks.breakPm   ? 'true' : 'false',
         }
       );
-      console.log('休憩更新結果:', result);
+      
       await loadTodayData();
     } catch (err) {
-      console.log('休憩更新エラー:', err.message);
+     console.log('休憩更新エラー:', err.message); 
     }
   } else {
-    console.log('出勤前なのでGASに送らない');
+    
   }
 };
 

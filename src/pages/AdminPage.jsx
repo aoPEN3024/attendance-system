@@ -170,6 +170,13 @@ export default function AdminPage() {
     } catch(e) { return null; }
   };
 
+  const sortedSites = [
+    ...siteList.filter(s => s.active),
+    ...siteList.filter(s => !s.active),
+  ].filter(s =>
+    s.siteName.includes(siteSearch) || s.siteId.includes(siteSearch)
+  );
+
   // ── 打刻編集画面 ──────────────────────────────────────
   if (view === 'edit' && editRow) return (
     <div style={s.page}>
@@ -478,6 +485,7 @@ export default function AdminPage() {
   }
 
   // ── 現場管理サブ画面 ──────────────────────────────────
+  
   if (mainTab === 'sites') {
 
     // 現場追加・編集フォーム
@@ -522,12 +530,7 @@ export default function AdminPage() {
     }
 
     // 現場管理一覧
-    const sortedSites = [
-      ...siteList.filter(s => s.active),
-      ...siteList.filter(s => !s.active),
-    ].filter(s =>
-      s.siteName.includes(siteSearch) || s.siteId.includes(siteSearch)
-    );
+    
     return (
       <div style={s.page}>
         <div style={s.card}>
