@@ -35,7 +35,7 @@ export default function AdminPage() {
   const [totalPending, setTotalPending] = useState(0);
   const [loading, setLoading]           = useState(false);
   const [view, setView]                 = useState('list');
-  const [mainTab, setMainTab]           = useState('attendance'); // 'attendance' | 'staff'
+  const [mainTab, setMainTab]           = useState('attendance');
   const [selectedEmp, setSelectedEmp]   = useState(null);
   const [empData, setEmpData]           = useState(null);
   const [editRow, setEditRow]           = useState(null);
@@ -45,15 +45,23 @@ export default function AdminPage() {
   const [message, setMessage]           = useState('');
 
   // 社員管理用
-  const [staffList, setStaffList]       = useState([]);
-  const [staffView, setStaffView]       = useState('list'); // 'list' | 'add' | 'edit' | 'password' | 'leave'
+  const [staffList, setStaffList]         = useState([]);
+  const [staffView, setStaffView]         = useState('list');
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [staffFields, setStaffFields]   = useState({});
-  const [staffMessage, setStaffMessage] = useState('');
-  const [leaveGrant, setLeaveGrant]     = useState('');
+  const [staffFields, setStaffFields]     = useState({});
+  const [staffMessage, setStaffMessage]   = useState('');
+  const [leaveGrant, setLeaveGrant]       = useState('');
+
+  // 現場管理用
+  const [siteList, setSiteList]         = useState([]);
+  const [siteView, setSiteView]         = useState('list');
+  const [selectedSite, setSelectedSite] = useState(null);
+  const [siteFields, setSiteFields]     = useState({});
+  const [siteMessage, setSiteMessage]   = useState('');
 
   useEffect(() => { loadEmployees(); }, [yearMonth]);
   useEffect(() => { if (mainTab === 'staff') loadStaff(); }, [mainTab]);
+  useEffect(() => { if (mainTab === 'sites') loadSites(); }, [mainTab]);
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -74,6 +82,15 @@ export default function AdminPage() {
       setStaffList(result);
     } catch (err) {
       console.log('社員マスタ取得エラー:', err.message);
+    }
+  };
+
+  const loadSites = async () => {
+    try {
+      const result = await api.adminSitesList();
+      setSiteList(result);
+    } catch (err) {
+      console.log('現場マスタ取得エラー:', err.message);
     }
   };
 
@@ -401,7 +418,7 @@ export default function AdminPage() {
 
           {/* タブ */}
           <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
-            {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員管理'}].map(({k,l}) => (
+            {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
               <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
             ))}
           </div>
@@ -459,6 +476,110 @@ export default function AdminPage() {
     );
   }
 
+  // ── 現場管理サブ画面 ──────────────────────────────────
+  if (mainTab === 'sites') {
+
+    // 現場追加・編集フォーム
+    if (siteView === 'add' || siteView === 'edit') {
+      const isAdd = siteView === 'add';
+      return (
+        <div style={s.page}>
+          <div style={s.card}>
+            <div style={s.topbar}>
+              <button onClick={() => { setSiteView('list'); setSiteMessage(''); }} style={s.backBtn}>‹ 戻る</button>
+              <div style={s.topTitle}>{isAdd ? '現場追加' : '現場編集'}</div>
+              <span style={s.adminBadge}>管理者</span>
+            </div>
+            <div style={{ padding: '12px 16px' }}>
+              {isAdd && (
+                <>
+                  <div style={s.flabel}>現場ID（変更不可）</div>
+                  <input value={siteFields.siteId || ''} onChange={e => setSiteFields(f => ({...f, siteId: e.target.value}))} placeholder="例: SITE004" style={{ ...s.timeInput, marginBottom: 12 }} />
+                </>
+              )}
+              <div style={s.flabel}>現場名</div>
+              <input value={siteFields.siteName || ''} onChange={e => setSiteFields(f => ({...f, siteName: e.target.value}))} placeholder="例: 〇〇建設 C現場" style={{ ...s.timeInput, marginBottom: 12 }} />
+              {siteMessage && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: siteMessage.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: siteMessage.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{siteMessage}</div>}
+              <button onClick={async () => {
+                setSiteMessage('');
+                try {
+                  if (isAdd) {
+                    await api.adminSiteAdd(siteFields.siteId, siteFields.siteName);
+                  } else {
+                    await api.adminSiteEdit(selectedSite.siteId, siteFields.siteName);
+                  }
+                  setSiteMessage(isAdd ? '追加しました' : '更新しました');
+                  await loadSites();
+                  setTimeout(() => { setSiteView('list'); setSiteMessage(''); }, 1200);
+                } catch(err) { setSiteMessage('エラー: ' + err.message); }
+              }} style={s.saveBtn}>保存する</button>
+              <button onClick={() => { setSiteView('list'); setSiteMessage(''); }} style={s.cancelBtn}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 現場管理一覧
+    return (
+      <div style={s.page}>
+        <div style={s.card}>
+          <div style={s.topbar}>
+            <div style={s.topTitle}>現場管理</div>
+            <span style={{ fontSize: 12, color: '#888', marginRight: 8 }}>{user?.name}</span>
+            <button onClick={logout} style={{ border: 'none', background: 'none', fontSize: 13, color: '#888', cursor: 'pointer' }}>ログアウト</button>
+          </div>
+
+          {/* タブ */}
+          <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
+            {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
+              <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
+            ))}
+          </div>
+
+          <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '0.5px solid #eee' }}>
+            <div style={{ fontSize: 12, color: '#888' }}>{siteList.length}件登録中</div>
+            <button onClick={() => { setSiteFields({}); setSiteMessage(''); setSiteView('add'); }}
+              style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#185FA5', cursor: 'pointer' }}>
+              ＋ 現場追加
+            </button>
+          </div>
+
+          {siteList.map(site => (
+            <div key={site.siteId} style={{ padding: '11px 14px', borderBottom: '0.5px solid #eee', opacity: site.active ? 1 : 0.5 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: site.active ? '#E6F1FB' : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: site.active ? '#185FA5' : '#aaa', flexShrink: 0 }}>
+                  現場
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#222' }}>{site.siteName}</div>
+                  <div style={{ fontSize: 11, color: '#888' }}>
+                    {site.siteId}
+                    {!site.active && <span style={{ color: '#A32D2D', marginLeft: 6 }}>無効</span>}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <button onClick={() => { setSelectedSite(site); setSiteFields({ siteName: site.siteName }); setSiteMessage(''); setSiteView('edit'); }}
+                  style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>編集</button>
+                <button onClick={async () => {
+                  if (!window.confirm(`${site.siteName}を${site.active ? '無効' : '有効'}にしますか？`)) return;
+                  try {
+                    await api.adminSiteToggle(site.siteId);
+                    await loadSites();
+                  } catch(err) { alert('エラー: ' + err.message); }
+                }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: `0.5px solid ${site.active ? '#F09595' : '#7DC4A0'}`, background: site.active ? '#FCEBEB' : '#E6F7EE', color: site.active ? '#A32D2D' : '#1A7A4A', cursor: 'pointer' }}>
+                  {site.active ? '無効化' : '有効化'}
+                </button>
+              </div>
+            </div>
+          ))}
+          <div style={{ height: 20 }} />
+        </div>
+      </div>
+    );
+  }
+
   // ── 勤怠管理一覧画面 ──────────────────────────────────
   return (
     <div style={s.page}>
@@ -471,7 +592,7 @@ export default function AdminPage() {
 
         {/* タブ */}
         <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
-          {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員管理'}].map(({k,l}) => (
+          {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
             <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
           ))}
         </div>
