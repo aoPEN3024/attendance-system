@@ -20,11 +20,25 @@ export const api = {
   login: (employeeId, password) =>
     gasRequest({ action: 'auth/login', employeeId, password }),
 
-  punch: (type, date, time, siteId, breaks, substituteType) =>
-    gasRequest({ action: 'attendance/punch', type, date, time, siteId, ...breaks, ...(substituteType ? { substituteType } : {}) }),
+  punch: (type, date, time, sites, breaks, substituteType) =>
+    gasRequest({
+      action: 'attendance/punch', type, date, time,
+      site1Id: sites[0]?.siteId || '', site1Min: sites[0]?.minutes || 0,
+      site2Id: sites[1]?.siteId || '', site2Min: sites[1]?.minutes || 0,
+      site3Id: sites[2]?.siteId || '', site3Min: sites[2]?.minutes || 0,
+      ...breaks,
+      ...(substituteType ? { substituteType } : {}),
+    }),
 
-  apply: (date, clockIn, clockOut, siteId, breaks, reason, substituteType) =>
-    gasRequest({ action: 'attendance/apply', date, clockIn, clockOut, siteId, ...breaks, reason, ...(substituteType ? { substituteType } : {}) }),
+  apply: (date, clockIn, clockOut, sites, breaks, reason, substituteType) =>
+    gasRequest({
+      action: 'attendance/apply', date, clockIn, clockOut,
+      site1Id: sites[0]?.siteId || '', site1Min: sites[0]?.minutes || 0,
+      site2Id: sites[1]?.siteId || '', site2Min: sites[1]?.minutes || 0,
+      site3Id: sites[2]?.siteId || '', site3Min: sites[2]?.minutes || 0,
+      ...breaks, reason,
+      ...(substituteType ? { substituteType } : {}),
+    }),
 
   today: (date) =>
     gasRequest({ action: 'attendance/today', date }),
