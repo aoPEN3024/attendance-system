@@ -263,17 +263,17 @@ export default function PunchPage() {
                 style={{
                   ...s.breakBtn,
                   background:  breaks[key] ? '#E6F1FB' : 'white',
-                  borderColor: breaks[key] ? '#185FA5' : '#ddd',
+                  borderColor: breaks[key] ? '#1855A0' : '#ddd',
                 }}
               >
-                {breaks[key] && <i className="ti ti-check" style={{ position: 'absolute', top: 5, right: 5, fontSize: 11, color: '#185FA5' }} />}
-                <span style={{ fontSize: 13, fontWeight: 500, display: 'block', color: breaks[key] ? '#185FA5' : '#888' }}>{label}</span>
-                <span style={{ fontSize: 11, color: breaks[key] ? '#185FA5' : '#aaa' }}>{min}</span>
+                {breaks[key] && <i className="ti ti-check" style={{ position: 'absolute', top: 5, right: 5, fontSize: 11, color: '#1855A0' }} />}
+                <span style={{ fontSize: 13, fontWeight: 500, display: 'block', color: breaks[key] ? '#1855A0' : '#888' }}>{label}</span>
+                <span style={{ fontSize: 11, color: breaks[key] ? '#1855A0' : '#aaa' }}>{min}</span>
               </button>
             ))}
           </div>
           <div style={s.breakSummary}>
-            取得合計：<span style={{ color: '#185FA5', fontWeight: 500 }}>{breakTotal}分</span>
+            取得合計：<span style={{ color: '#1855A0', fontWeight: 500 }}>{breakTotal}分</span>
             {breakLabel !== 'なし' && `（${breakLabel}）`}
           </div>
         </div>
@@ -302,7 +302,7 @@ function formatDateJp(dateStr) {
 }
 
 const styles = {
-  page:           { minHeight: '100svh', background: '#f5f5f5', display: 'flex', justifyContent: 'center', padding: '1rem' },
+  page: { minHeight: '100svh', background: '#f5f5f5', display: 'flex', justifyContent: 'center', padding: '1rem 1rem 80px' },
   card:           { background: 'white', border: '0.5px solid #eee', borderRadius: 16, width: '100%', maxWidth: 400, overflow: 'hidden', alignSelf: 'flex-start' },
   topbar:         { background: '#f9f9f9', padding: '11px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '0.5px solid #eee' },
   empName:        { fontSize: 13, fontWeight: 500, color: '#222' },

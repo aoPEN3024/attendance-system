@@ -34,7 +34,7 @@ function AppInner() {
             style={{
               flex: 1, textAlign: 'center', fontSize: 10,
               border: 'none', background: 'none', cursor: 'pointer',
-              color: tab === key ? '#185FA5' : '#888',
+              color: tab === key ? '#1855A0' : '#888',
             }}
           >
             <i className={`ti ${icon}`} style={{ display: 'block', fontSize: 22, marginBottom: 2 }} />

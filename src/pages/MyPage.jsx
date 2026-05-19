@@ -32,11 +32,11 @@ const formatDateJp = (dateStr) => {
 const STATUS_MAP = {
   confirmed:          { label: '確定',      bg: '#E6F7EE', color: '#1A7A4A' },
   pending:            { label: '申請中',    bg: '#FCEBEB', color: '#A32D2D' },
-  leave:              { label: '有給',      bg: '#E6F1FB', color: '#185FA5' },
+  leave:              { label: '有給',      bg: '#E6F1FB', color: '#1855A0' },
   leave_pending:      { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
   rejected:           { label: '差戻し',    bg: '#FCEBEB', color: '#A32D2D' },
   substitute_work:    { label: '振替出勤',  bg: '#FFF4E5', color: '#A05A00' },
-  substitute_holiday: { label: '振替休日',  bg: '#E6F1FB', color: '#185FA5' },
+  substitute_holiday: { label: '振替休日',  bg: '#E6F1FB', color: '#1855A0' },
 };
 
 const StatusBadge = ({ status }) => {
@@ -183,9 +183,9 @@ export default function MyPage() {
           <div style={s.flabel}>取得できた休憩</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12, opacity: (holMode || subMode === 'holiday') ? 0.35 : 1, pointerEvents: (holMode || subMode === 'holiday') ? 'none' : 'auto' }}>
             {[{k:'am',l:'AM休憩',m:'15分'},{k:'noon',l:'昼休憩',m:'60分'},{k:'pm',l:'PM休憩',m:'15分'}].map(({k,l,m}) => (
-              <button key={k} onClick={() => setEditBreaks(b => ({...b, [k]: !b[k]}))} style={{ ...s.breakBtn, background: editBreaks[k] ? '#E6F1FB' : 'white', borderColor: editBreaks[k] ? '#185FA5' : '#ddd' }}>
-                <span style={{ fontSize: 12, fontWeight: 500, display: 'block', color: editBreaks[k] ? '#185FA5' : '#888' }}>{l}</span>
-                <span style={{ fontSize: 10, color: editBreaks[k] ? '#185FA5' : '#aaa' }}>{m}</span>
+              <button key={k} onClick={() => setEditBreaks(b => ({...b, [k]: !b[k]}))} style={{ ...s.breakBtn, background: editBreaks[k] ? '#E6F1FB' : 'white', borderColor: editBreaks[k] ? '#1855A0' : '#ddd' }}>
+                <span style={{ fontSize: 12, fontWeight: 500, display: 'block', color: editBreaks[k] ? '#1855A0' : '#888' }}>{l}</span>
+                <span style={{ fontSize: 10, color: editBreaks[k] ? '#1855A0' : '#aaa' }}>{m}</span>
               </button>
             ))}
           </div>
@@ -194,8 +194,8 @@ export default function MyPage() {
 
           <hr style={{ border: 'none', borderTop: '0.5px solid #eee', margin: '4px 0 12px' }} />
           <div style={s.flabel}>有給申請</div>
-          <button onClick={() => { setHolMode(h => !h); setSubMode(null); }} style={{ ...s.holBtn, background: holMode ? '#FFF4E5' : '#E6F1FB', borderColor: holMode ? '#F0A500' : '#185FA5', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: holMode ? '#A05A00' : '#185FA5' }}>
+          <button onClick={() => { setHolMode(h => !h); setSubMode(null); }} style={{ ...s.holBtn, background: holMode ? '#FFF4E5' : '#E6F1FB', borderColor: holMode ? '#F0A500' : '#1855A0', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: holMode ? '#A05A00' : '#1855A0' }}>
               {holMode ? '有給申請中（タップで取消）' : 'この日を有給にする'}
             </span>
           </button>
@@ -217,7 +217,7 @@ export default function MyPage() {
                   setSubMode('holiday'); setHolMode(false);
                 } catch(err) { setMessage('エラー: ' + err.message); }
               }}
-              style={{ borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '0.5px solid', background: subMode === 'holiday' ? '#E6F1FB' : 'white', borderColor: subMode === 'holiday' ? '#185FA5' : '#ddd', color: subMode === 'holiday' ? '#185FA5' : '#888' }}
+              style={{ borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '0.5px solid', background: subMode === 'holiday' ? '#E6F1FB' : 'white', borderColor: subMode === 'holiday' ? '#1855A0' : '#ddd', color: subMode === 'holiday' ? '#1855A0' : '#888' }}
             >
               {subMode === 'holiday' ? '振替休日申請中' : '振替休日にする'}
             </button>
@@ -278,7 +278,7 @@ export default function MyPage() {
           const isToday = date === todayStr;
           const isSun = dow === 0;
           const isSat = dow === 6;
-          const dateColor = isSun ? '#E24B4A' : isSat ? '#185FA5' : '#666';
+          const dateColor = isSun ? '#E24B4A' : isSat ? '#1855A0' : '#666';
           const bgColor = isToday ? '#F5F9FF' : 'white';
 
           return (

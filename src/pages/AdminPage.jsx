@@ -18,11 +18,11 @@ const statusBadge = (status) => {
   const map = {
     confirmed:          { label: '確定',      bg: '#E6F7EE', color: '#1A7A4A' },
     pending:            { label: '申請中',    bg: '#FCEBEB', color: '#A32D2D' },
-    leave:              { label: '有給',      bg: '#E6F1FB', color: '#185FA5' },
+    leave:              { label: '有給',      bg: '#E6F1FB', color: '#1855A0' },
     leave_pending:      { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
     rejected:           { label: '差戻し',    bg: '#FCEBEB', color: '#A32D2D' },
     substitute_work:    { label: '振替出勤',  bg: '#FFF4E5', color: '#A05A00' },
-    substitute_holiday: { label: '振替休日',  bg: '#E6F1FB', color: '#185FA5' },
+    substitute_holiday: { label: '振替休日',  bg: '#E6F1FB', color: '#1855A0' },
   };
   const sv = map[status] || { label: status, bg: '#f5f5f5', color: '#888' };
   return <span style={{ fontSize: 10, borderRadius: 3, padding: '1px 5px', background: sv.bg, color: sv.color }}>{sv.label}</span>;
@@ -168,7 +168,7 @@ export default function AdminPage() {
 
   const renderApplyDetail = (row) => {
     if (row.status === 'leave_pending') {
-      return <div style={{ fontSize: 12, color: '#185FA5', background: '#E6F1FB', borderRadius: 6, padding: '6px 10px', marginBottom: 6 }}>有給申請</div>;
+      return <div style={{ fontSize: 12, color: '#1855A0', background: '#E6F1FB', borderRadius: 6, padding: '6px 10px', marginBottom: 6 }}>有給申請</div>;
     }
     const match = row.reason && row.reason.match(/\[申請内容:(.*)\]/);
     if (!match) return null;
@@ -239,9 +239,9 @@ export default function AdminPage() {
           <div style={s.flabel}>取得できた休憩</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
             {[{k:'am',l:'AM休憩',m:'15分'},{k:'noon',l:'昼休憩',m:'60分'},{k:'pm',l:'PM休憩',m:'15分'}].map(({k,l,m}) => (
-              <button key={k} onClick={() => setEditBreaks(b => ({...b, [k]: !b[k]}))} style={{ ...s.breakBtn, background: editBreaks[k] ? '#E6F1FB' : 'white', borderColor: editBreaks[k] ? '#185FA5' : '#ddd' }}>
-                <span style={{ fontSize: 12, fontWeight: 500, display: 'block', color: editBreaks[k] ? '#185FA5' : '#888' }}>{l}</span>
-                <span style={{ fontSize: 10, color: editBreaks[k] ? '#185FA5' : '#aaa' }}>{m}</span>
+              <button key={k} onClick={() => setEditBreaks(b => ({...b, [k]: !b[k]}))} style={{ ...s.breakBtn, background: editBreaks[k] ? '#E6F1FB' : 'white', borderColor: editBreaks[k] ? '#1855A0' : '#ddd' }}>
+                <span style={{ fontSize: 12, fontWeight: 500, display: 'block', color: editBreaks[k] ? '#1855A0' : '#888' }}>{l}</span>
+                <span style={{ fontSize: 10, color: editBreaks[k] ? '#1855A0' : '#aaa' }}>{m}</span>
               </button>
             ))}
           </div>
@@ -340,7 +340,7 @@ export default function AdminPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                 {[{v:'general',l:'一般'},{v:'admin',l:'管理者'}].map(({v,l}) => (
                   <button key={v} onClick={() => setStaffFields(f => ({...f, role: v}))}
-                    style={{ padding: '9px 0', fontSize: 13, fontWeight: 500, borderRadius: 8, cursor: 'pointer', border: '0.5px solid', background: staffFields.role === v ? '#E6F1FB' : 'white', borderColor: staffFields.role === v ? '#185FA5' : '#ddd', color: staffFields.role === v ? '#185FA5' : '#888' }}>
+                    style={{ padding: '9px 0', fontSize: 13, fontWeight: 500, borderRadius: 8, cursor: 'pointer', border: '0.5px solid', background: staffFields.role === v ? '#E6F1FB' : 'white', borderColor: staffFields.role === v ? '#1855A0' : '#ddd', color: staffFields.role === v ? '#1855A0' : '#888' }}>
                     {l}
                   </button>
                 ))}
@@ -424,7 +424,7 @@ export default function AdminPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
               {[{v:'付与',l:'付与'},{v:'減算',l:'減算（修正）'}].map(({v,l}) => (
                 <button key={v} onClick={() => setStaffFields(f => ({...f, leaveType: v}))}
-                  style={{ padding: '9px 0', fontSize: 13, fontWeight: 500, borderRadius: 8, cursor: 'pointer', border: '0.5px solid', background: (staffFields.leaveType || '付与') === v ? '#E6F1FB' : 'white', borderColor: (staffFields.leaveType || '付与') === v ? '#185FA5' : '#ddd', color: (staffFields.leaveType || '付与') === v ? '#185FA5' : '#888' }}>
+                  style={{ padding: '9px 0', fontSize: 13, fontWeight: 500, borderRadius: 8, cursor: 'pointer', border: '0.5px solid', background: (staffFields.leaveType || '付与') === v ? '#E6F1FB' : 'white', borderColor: (staffFields.leaveType || '付与') === v ? '#1855A0' : '#ddd', color: (staffFields.leaveType || '付与') === v ? '#1855A0' : '#888' }}>
                   {l}
                 </button>
               ))}
@@ -468,7 +468,7 @@ export default function AdminPage() {
           {/* タブ */}
           <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
             {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
-              <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
+              <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #1855A0' : '2px solid transparent', color: mainTab === k ? '#1855A0' : '#888', cursor: 'pointer' }}>{l}</button>
             ))}
           </div>
 
@@ -480,7 +480,7 @@ export default function AdminPage() {
                 一括有給付与
               </button>
               <button onClick={() => { setStaffFields({ role: 'general' }); setStaffMessage(''); setStaffView('add'); }}
-                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#185FA5', cursor: 'pointer' }}>
+                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', cursor: 'pointer' }}>
                 ＋ 社員追加
               </button>
             </div>
@@ -489,7 +489,7 @@ export default function AdminPage() {
           {staffList.map(staff => (
             <div key={staff.employeeId} style={{ padding: '11px 14px', borderBottom: '0.5px solid #eee', opacity: staff.active ? 1 : 0.5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: staff.active ? '#E6F1FB' : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: staff.active ? '#185FA5' : '#aaa', flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: staff.active ? '#E6F1FB' : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: staff.active ? '#1855A0' : '#aaa', flexShrink: 0 }}>
                   {staff.name.slice(0,2)}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -584,14 +584,14 @@ export default function AdminPage() {
           {/* タブ */}
           <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
             {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
-              <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
+              <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #1855A0' : '2px solid transparent', color: mainTab === k ? '#1855A0' : '#888', cursor: 'pointer' }}>{l}</button>
             ))}
           </div>
 
           <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '0.5px solid #eee' }}>
             <div style={{ fontSize: 12, color: '#888' }}>{siteList.length}件登録中</div>
             <button onClick={() => { setSiteFields({}); setSiteMessage(''); setSiteView('add'); }}
-              style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#185FA5', cursor: 'pointer' }}>
+              style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', cursor: 'pointer' }}>
               ＋ 現場追加
             </button>
           </div>
@@ -607,7 +607,7 @@ export default function AdminPage() {
           {sortedSites.map(site => (
             <div key={site.siteId} style={{ padding: '11px 14px', borderBottom: '0.5px solid #eee', opacity: site.active ? 1 : 0.5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: site.active ? '#E6F1FB' : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: site.active ? '#185FA5' : '#aaa', flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: site.active ? '#E6F1FB' : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: site.active ? '#1855A0' : '#aaa', flexShrink: 0 }}>
                   現場
                 </div>
                 <div style={{ flex: 1 }}>
@@ -652,7 +652,7 @@ export default function AdminPage() {
         {/* タブ */}
         <div style={{ display: 'flex', borderBottom: '0.5px solid #eee' }}>
           {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
-            <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #185FA5' : '2px solid transparent', color: mainTab === k ? '#185FA5' : '#888', cursor: 'pointer' }}>{l}</button>
+            <button key={k} onClick={() => setMainTab(k)} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: mainTab === k ? 500 : 400, border: 'none', background: 'none', borderBottom: mainTab === k ? '2px solid #1855A0' : '2px solid transparent', color: mainTab === k ? '#1855A0' : '#888', cursor: 'pointer' }}>{l}</button>
           ))}
         </div>
 
@@ -672,7 +672,7 @@ export default function AdminPage() {
 
         {employees.map(emp => (
           <div key={emp.employeeId} onClick={() => loadEmpDetail(emp)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: '0.5px solid #eee', cursor: 'pointer' }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: emp.pendingCount > 0 ? '#FFF4E5' : '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: emp.pendingCount > 0 ? '#A05A00' : '#185FA5', flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: emp.pendingCount > 0 ? '#FFF4E5' : '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: emp.pendingCount > 0 ? '#A05A00' : '#1855A0', flexShrink: 0 }}>
               {emp.name.slice(0,2)}
             </div>
             <div style={{ flex: 1 }}>
@@ -726,7 +726,7 @@ export default function AdminPage() {
               <button
                 key={emp.employeeId}
                 onClick={() => api.adminExportCsv(yearMonth, 'individual', emp.employeeId)}
-                style={{ width: '100%', padding: '8px 0', fontSize: 12, fontWeight: 500, background: '#E6F1FB', color: '#185FA5', border: '0.5px solid #B5D4F4', borderRadius: 8, cursor: 'pointer' }}
+                style={{ width: '100%', padding: '8px 0', fontSize: 12, fontWeight: 500, background: '#E6F1FB', color: '#1855A0', border: '0.5px solid #B5D4F4', borderRadius: 8, cursor: 'pointer' }}
               >{emp.name}</button>
             ))}
           </div>
