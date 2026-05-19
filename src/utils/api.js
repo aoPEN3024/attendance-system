@@ -109,4 +109,9 @@ export const api = {
 
   adminSiteToggle: (siteId) =>
     gasRequest({ action: 'admin/site/toggle', siteId }),
+  payslipList: () =>
+    gasRequest({ action: 'payslip/list' }),
+
+  payslipUpload: (targetEmployeeId) =>
+    gasRequest({ action: 'payslip/upload', targetEmployeeId }),
 };
