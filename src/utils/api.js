@@ -64,4 +64,18 @@ export const api = {
     const query = new URLSearchParams({ action: 'admin/export/csv', token, yearMonth }).toString();
     window.open(`${GAS_URL}?${query}`);
   },
+  adminEmployeesList: () =>
+    gasRequest({ action: 'admin/employees/list' }),
+
+  adminEmployeeAdd: (employeeId, name, password, role, hireDate) =>
+    gasRequest({ action: 'admin/employee/add', employeeId, name, password, role, hireDate }),
+
+  adminEmployeeEdit: (employeeId, name, role, hireDate) =>
+    gasRequest({ action: 'admin/employee/edit', employeeId, name, role, hireDate }),
+
+  adminEmployeePassword: (employeeId, newPassword) =>
+    gasRequest({ action: 'admin/employee/password', employeeId, newPassword }),
+
+  adminEmployeeToggle: (employeeId) =>
+    gasRequest({ action: 'admin/employee/toggle', employeeId }),
 };
