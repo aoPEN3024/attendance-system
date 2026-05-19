@@ -58,6 +58,7 @@ export default function AdminPage() {
   const [selectedSite, setSelectedSite] = useState(null);
   const [siteFields, setSiteFields]     = useState({});
   const [siteMessage, setSiteMessage]   = useState('');
+  const [siteSearch, setSiteSearch] = useState('');
 
   useEffect(() => { loadEmployees(); }, [yearMonth]);
   useEffect(() => { if (mainTab === 'staff') loadStaff(); }, [mainTab]);
@@ -521,7 +522,6 @@ export default function AdminPage() {
     }
 
     // 現場管理一覧
-    const [siteSearch, setSiteSearch] = useState('');
     const sortedSites = [
       ...siteList.filter(s => s.active),
       ...siteList.filter(s => !s.active),
