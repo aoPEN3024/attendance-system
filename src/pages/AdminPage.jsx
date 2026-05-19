@@ -288,7 +288,7 @@ export default function AdminPage() {
         ))}
 <div style={{ margin: '12px 14px 0' }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 8 }}>月次締め・CSV出力</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
             <button
               onClick={async () => {
                 if (!window.confirm(`${yearMonth.replace('-','年')}月を締めますか？\n締め後は打刻の編集ができなくなります。`)) return;
@@ -310,7 +310,22 @@ export default function AdminPage() {
               CSV出力
             </button>
           </div>
+          <button
+            onClick={async () => {
+              if (!window.confirm(`${yearMonth.replace('-','年')}月の締めを解除しますか？`)) return;
+              try {
+                const result = await api.adminOpen(yearMonth);
+                alert(result.message);
+              } catch(err) {
+                alert('エラー：' + err.message);
+              }
+            }}
+            style={{ width: '100%', padding: '10px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 8, cursor: 'pointer' }}
+          >
+            締めを解除する
+          </button>
         </div>
+
         <div style={{ height: 20 }} />
       </div>
     </div>

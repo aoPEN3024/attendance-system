@@ -53,6 +53,9 @@ export const api = {
   adminClose: (yearMonth) =>
     gasRequest({ action: 'admin/close', yearMonth }),
 
+  adminOpen: (yearMonth) =>
+    gasRequest({ action: 'admin/open', yearMonth }),
+
   sites: () => gasRequest({ action: 'sites/list' }),
   substituteBalance: () =>
     gasRequest({ action: 'attendance/substitute/balance' }),
