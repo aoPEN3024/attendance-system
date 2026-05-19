@@ -7,11 +7,41 @@ const toYearMonth = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const getDaysInMonth = (yearMonth) => {
+  const [y, m] = yearMonth.split('-').map(Number);
+  const days = [];
+  const count = new Date(y, m, 0).getDate();
+  for (let i = 1; i <= count; i++) {
+    const d = new Date(y, m - 1, i);
+    days.push({
+      date: `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`,
+      dow: d.getDay(),
+    });
+  }
+  return days;
+};
+
+const DOW = ['日','月','火','水','木','金','土'];
+
 const formatDateJp = (dateStr) => {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
-  const days = ['日','月','火','水','木','金','土'];
-  return `${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）`;
+  return `${d.getMonth()+1}/${d.getDate()}（${DOW[d.getDay()]}）`;
+};
+
+const STATUS_MAP = {
+  confirmed:          { label: '確定',      bg: '#E6F7EE', color: '#1A7A4A' },
+  pending:            { label: '申請中',    bg: '#FCEBEB', color: '#A32D2D' },
+  leave:              { label: '有給',      bg: '#E6F1FB', color: '#185FA5' },
+  leave_pending:      { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
+  rejected:           { label: '差戻し',    bg: '#FCEBEB', color: '#A32D2D' },
+  substitute_work:    { label: '振替出勤',  bg: '#FFF4E5', color: '#A05A00' },
+  substitute_holiday: { label: '振替休日',  bg: '#E6F1FB', color: '#185FA5' },
+};
+
+const StatusBadge = ({ status }) => {
+  const s = STATUS_MAP[status] || { label: status || '未打刻', bg: '#f5f5f5', color: '#bbb' };
+  return <span style={{ fontSize: 10, borderRadius: 3, padding: '1px 5px', background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>{s.label}</span>;
 };
 
 export default function MyPage() {
@@ -23,7 +53,7 @@ export default function MyPage() {
   const [editFields, setEditFields] = useState({});
   const [editBreaks, setEditBreaks] = useState({ am: false, noon: false, pm: false });
   const [holMode, setHolMode]       = useState(false);
-  const [subMode, setSubMode] = useState(null); // 'work' | 'holiday' | null
+  const [subMode, setSubMode]       = useState(null);
   const [reason, setReason]         = useState('');
   const [message, setMessage]       = useState('');
 
@@ -47,11 +77,18 @@ export default function MyPage() {
     setYearMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
   };
 
-  const openEdit = (row) => {
-    setEditRow(row);
-    setEditFields({ clockIn: row.clockIn || '', clockOut: row.clockOut || '', siteId: row.siteId || '' });
-    setEditBreaks({ am: row.breaks?.am || false, noon: row.breaks?.noon || false, pm: row.breaks?.pm || false });
-    setHolMode(row.status === 'leave' || row.status === 'leave_pending');
+  // 日付ごとのデータをマップ化
+  const rowMap = {};
+  if (data?.rows) {
+    data.rows.forEach(r => { rowMap[r.date] = r; });
+  }
+
+  const openEdit = (date, row) => {
+    setEditRow({ date, ...(row || {}) });
+    setEditFields({ clockIn: row?.clockIn || '', clockOut: row?.clockOut || '', siteId: row?.siteId || '' });
+    setEditBreaks({ am: row?.breaks?.am || false, noon: row?.breaks?.noon || false, pm: row?.breaks?.pm || false });
+    setHolMode(row?.status === 'leave' || row?.status === 'leave_pending');
+    setSubMode(null);
     setReason('');
     setMessage('');
   };
@@ -66,32 +103,21 @@ export default function MyPage() {
         setMessage('有給申請を送信しました');
       } else if (subMode === 'work') {
         await api.apply(
-          editRow.date,
-          editFields.clockIn,
-          editFields.clockOut,
-          editFields.siteId,
+          editRow.date, editFields.clockIn, editFields.clockOut, editFields.siteId,
           { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
-          reason || '振替出勤申請',
-          'substitute_work'
+          reason || '振替出勤申請', 'substitute_work'
         );
         setMessage('振替出勤申請を送信しました');
       } else if (subMode === 'holiday') {
         await api.apply(
-          editRow.date,
-          editFields.clockIn || '00:00',
-          editFields.clockOut || '00:00',
-          editFields.siteId,
+          editRow.date, '00:00', '00:00', editFields.siteId,
           { breakAm: 'false', breakNoon: 'false', breakPm: 'false' },
-          reason || '振替休日申請',
-          'substitute_holiday'
+          reason || '振替休日申請', 'substitute_holiday'
         );
         setMessage('振替休日申請を送信しました');
       } else {
         await api.apply(
-          editRow.date,
-          editFields.clockIn,
-          editFields.clockOut,
-          editFields.siteId,
+          editRow.date, editFields.clockIn, editFields.clockOut, editFields.siteId,
           { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
           reason || '修正申請'
         );
@@ -104,20 +130,7 @@ export default function MyPage() {
     }
   };
 
-  const statusBadge = (status) => {
-    const map = {
-      confirmed:     { label: '確定', bg: '#E6F7EE', color: '#1A7A4A' },
-      pending:       { label: '申請中', bg: '#FCEBEB', color: '#A32D2D' },
-      leave:         { label: '有給', bg: '#E6F1FB', color: '#185FA5' },
-      leave_pending: { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
-      rejected:      { label: '差戻し', bg: '#FCEBEB', color: '#A32D2D' },
-      substitute_work:    { label: '振替出勤', bg: '#FFF4E5', color: '#A05A00' },
-    substitute_holiday: { label: '振替休日', bg: '#E6F1FB', color: '#185FA5' },
-    };
-    const s = map[status] || { label: status, bg: '#f5f5f5', color: '#888' };
-    return <span style={{ fontSize: 10, borderRadius: 3, padding: '1px 5px', background: s.bg, color: s.color }}>{s.label}</span>;
-  };
-
+  // ── 編集画面 ──────────────────────────────────────────
   if (editRow) return (
     <div style={s.page}>
       <div style={s.card}>
@@ -128,11 +141,11 @@ export default function MyPage() {
         <div style={{ padding: '12px 16px' }}>
           <div style={s.flabel}>出勤・退勤時刻</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-            <input type="time" value={editFields.clockIn} onChange={e => setEditFields(f => ({...f, clockIn: e.target.value}))} style={s.timeInput} disabled={holMode} />
-            <input type="time" value={editFields.clockOut} onChange={e => setEditFields(f => ({...f, clockOut: e.target.value}))} style={s.timeInput} disabled={holMode} />
+            <input type="time" value={editFields.clockIn} onChange={e => setEditFields(f => ({...f, clockIn: e.target.value}))} style={s.timeInput} disabled={holMode || subMode === 'holiday'} />
+            <input type="time" value={editFields.clockOut} onChange={e => setEditFields(f => ({...f, clockOut: e.target.value}))} style={s.timeInput} disabled={holMode || subMode === 'holiday'} />
           </div>
           <div style={s.flabel}>取得できた休憩</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12, opacity: holMode ? 0.35 : 1, pointerEvents: holMode ? 'none' : 'auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12, opacity: (holMode || subMode === 'holiday') ? 0.35 : 1, pointerEvents: (holMode || subMode === 'holiday') ? 'none' : 'auto' }}>
             {[{k:'am',l:'AM休憩',m:'15分'},{k:'noon',l:'昼休憩',m:'60分'},{k:'pm',l:'PM休憩',m:'15分'}].map(({k,l,m}) => (
               <button key={k} onClick={() => setEditBreaks(b => ({...b, [k]: !b[k]}))} style={{ ...s.breakBtn, background: editBreaks[k] ? '#E6F1FB' : 'white', borderColor: editBreaks[k] ? '#185FA5' : '#ddd' }}>
                 <span style={{ fontSize: 12, fontWeight: 500, display: 'block', color: editBreaks[k] ? '#185FA5' : '#888' }}>{l}</span>
@@ -142,31 +155,20 @@ export default function MyPage() {
           </div>
           <div style={s.flabel}>申請理由</div>
           <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="例：打刻忘れのため" style={s.textarea} rows={2} />
+
           <hr style={{ border: 'none', borderTop: '0.5px solid #eee', margin: '4px 0 12px' }} />
           <div style={s.flabel}>有給申請</div>
-          <button onClick={() => setHolMode(h => !h)} style={{ ...s.holBtn, background: holMode ? '#FFF4E5' : '#E6F1FB', borderColor: holMode ? '#F0A500' : '#185FA5', marginBottom: 12 }}>
+          <button onClick={() => { setHolMode(h => !h); setSubMode(null); }} style={{ ...s.holBtn, background: holMode ? '#FFF4E5' : '#E6F1FB', borderColor: holMode ? '#F0A500' : '#185FA5', marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: holMode ? '#A05A00' : '#185FA5' }}>
               {holMode ? '有給申請中（タップで取消）' : 'この日を有給にする'}
             </span>
           </button>
-          {message && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: message.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: message.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{message}</div>}
-          <button onClick={handleSave} style={s.saveBtn}>
-            {holMode ? '有給申請する' : '申請・保存する'}
-          </button>
-          <button onClick={closeEdit} style={s.cancelBtn}>キャンセル</button>
 
-          <hr style={{ border: 'none', borderTop: '0.5px solid #eee', margin: '12px 0' }} />
           <div style={s.flabel}>振替申請</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
             <button
-              onClick={() => setSubMode(m => m === 'work' ? null : 'work')}
-              style={{
-                borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500,
-                cursor: 'pointer', border: '0.5px solid',
-                background: subMode === 'work' ? '#FFF4E5' : 'white',
-                borderColor: subMode === 'work' ? '#F0A500' : '#ddd',
-                color: subMode === 'work' ? '#A05A00' : '#888',
-              }}
+              onClick={() => { setSubMode(m => m === 'work' ? null : 'work'); setHolMode(false); }}
+              style={{ borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '0.5px solid', background: subMode === 'work' ? '#FFF4E5' : 'white', borderColor: subMode === 'work' ? '#F0A500' : '#ddd', color: subMode === 'work' ? '#A05A00' : '#888' }}
             >
               {subMode === 'work' ? '振替出勤申請中' : '振替出勤にする'}
             </button>
@@ -175,30 +177,29 @@ export default function MyPage() {
                 if (subMode === 'holiday') { setSubMode(null); return; }
                 try {
                   const bal = await api.substituteBalance();
-                  if (bal.balance <= 0) {
-                    setMessage('エラー: 振替出勤の残数が0です');
-                    return;
-                  }
-                  setSubMode('holiday');
-                } catch(err) {
-                  setMessage('エラー: ' + err.message);
-                }
+                  if (bal.balance <= 0) { setMessage('エラー: 振替出勤の残数が0です'); return; }
+                  setSubMode('holiday'); setHolMode(false);
+                } catch(err) { setMessage('エラー: ' + err.message); }
               }}
-              style={{
-                borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500,
-                cursor: 'pointer', border: '0.5px solid',
-                background: subMode === 'holiday' ? '#E6F1FB' : 'white',
-                borderColor: subMode === 'holiday' ? '#185FA5' : '#ddd',
-                color: subMode === 'holiday' ? '#185FA5' : '#888',
-              }}
+              style={{ borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '0.5px solid', background: subMode === 'holiday' ? '#E6F1FB' : 'white', borderColor: subMode === 'holiday' ? '#185FA5' : '#ddd', color: subMode === 'holiday' ? '#185FA5' : '#888' }}
             >
               {subMode === 'holiday' ? '振替休日申請中' : '振替休日にする'}
             </button>
           </div>
+
+          {message && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: message.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: message.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{message}</div>}
+          <button onClick={handleSave} style={s.saveBtn}>
+            {holMode ? '有給申請する' : subMode === 'work' ? '振替出勤申請する' : subMode === 'holiday' ? '振替休日申請する' : '申請・保存する'}
+          </button>
+          <button onClick={closeEdit} style={s.cancelBtn}>キャンセル</button>
         </div>
       </div>
     </div>
   );
+
+  // ── 一覧画面 ──────────────────────────────────────────
+  const days = getDaysInMonth(yearMonth);
+  const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
 
   return (
     <div style={s.page}>
@@ -210,7 +211,7 @@ export default function MyPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', borderBottom: '0.5px solid #eee' }}>
           <button onClick={() => changeMonth(-1)} style={s.monthBtn}>‹</button>
-          <div style={{ flex: 1, textAlign: 'center', fontSize: 14, fontWeight: 500 }}>{yearMonth.replace('-', '年')}月</div>
+          <div style={{ flex: 1, textAlign: 'center', fontSize: 14, fontWeight: 500 }}>{yearMonth.replace('-','年')}月</div>
           <button onClick={() => changeMonth(1)} style={s.monthBtn}>›</button>
         </div>
 
@@ -230,21 +231,42 @@ export default function MyPage() {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '52px 46px 46px 1fr 36px', gap: 3, padding: '5px 14px', background: '#f5f5f5', borderBottom: '0.5px solid #eee' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '52px 46px 46px 1fr 42px', gap: 3, padding: '5px 14px', background: '#f5f5f5', borderBottom: '0.5px solid #eee' }}>
           {['日付','出勤','退勤','実働','区分'].map(h => <span key={h} style={{ fontSize: 10, color: '#aaa' }}>{h}</span>)}
         </div>
 
         {loading && <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
 
-        {data?.rows.map(row => (
-          <div key={row.logId} onClick={() => openEdit(row)} style={{ display: 'grid', gridTemplateColumns: '52px 46px 46px 1fr 36px', gap: 3, padding: '9px 14px', borderBottom: '0.5px solid #eee', alignItems: 'center', cursor: 'pointer' }}>
-            <div style={{ fontSize: 12, color: '#666' }}>{formatDateJp(row.date)}</div>
-            <div style={{ fontSize: 12, color: row.clockIn ? '#222' : '#ccc', textAlign: 'right' }}>{row.clockIn || '--'}</div>
-            <div style={{ fontSize: 12, color: row.clockOut ? '#222' : '#ccc', textAlign: 'right' }}>{row.clockOut || '--'}</div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#222', textAlign: 'right' }}>{row.workDisplay || '--'}</div>
-            <div>{statusBadge(row.status)}</div>
-          </div>
-        ))}
+        {!loading && days.map(({ date, dow }) => {
+          const row = rowMap[date];
+          const isToday = date === todayStr;
+          const isSun = dow === 0;
+          const isSat = dow === 6;
+          const dateColor = isSun ? '#E24B4A' : isSat ? '#185FA5' : '#666';
+          const bgColor = isToday ? '#F5F9FF' : 'white';
+
+          return (
+            <div
+              key={date}
+              onClick={() => openEdit(date, row || null)}
+              style={{
+                display: 'grid', gridTemplateColumns: '52px 46px 46px 1fr 42px',
+                gap: 3, padding: '8px 14px',
+                borderBottom: '0.5px solid #eee',
+                alignItems: 'center', cursor: 'pointer',
+                background: bgColor,
+              }}
+            >
+              <div style={{ fontSize: 12, color: dateColor, fontWeight: isToday ? 500 : 400 }}>
+                {`${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`}
+              </div>
+              <div style={{ fontSize: 12, color: row?.clockIn ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockIn || '--'}</div>
+              <div style={{ fontSize: 12, color: row?.clockOut ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockOut || '--'}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#222', textAlign: 'right' }}>{row?.workDisplay || '--'}</div>
+              <div><StatusBadge status={row?.status} /></div>
+            </div>
+          );
+        })}
 
         <div style={{ height: 60 }} />
       </div>
