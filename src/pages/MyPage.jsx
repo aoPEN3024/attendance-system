@@ -23,6 +23,7 @@ export default function MyPage() {
   const [editFields, setEditFields] = useState({});
   const [editBreaks, setEditBreaks] = useState({ am: false, noon: false, pm: false });
   const [holMode, setHolMode]       = useState(false);
+  const [subMode, setSubMode] = useState(null); // 'work' | 'holiday' | null
   const [reason, setReason]         = useState('');
   const [message, setMessage]       = useState('');
 
@@ -63,6 +64,28 @@ export default function MyPage() {
       if (holMode) {
         await api.leaveApply(editRow.date, reason || '有給申請');
         setMessage('有給申請を送信しました');
+      } else if (subMode === 'work') {
+        await api.apply(
+          editRow.date,
+          editFields.clockIn,
+          editFields.clockOut,
+          editFields.siteId,
+          { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
+          reason || '振替出勤申請',
+          'substitute_work'
+        );
+        setMessage('振替出勤申請を送信しました');
+      } else if (subMode === 'holiday') {
+        await api.apply(
+          editRow.date,
+          editFields.clockIn || '00:00',
+          editFields.clockOut || '00:00',
+          editFields.siteId,
+          { breakAm: 'false', breakNoon: 'false', breakPm: 'false' },
+          reason || '振替休日申請',
+          'substitute_holiday'
+        );
+        setMessage('振替休日申請を送信しました');
       } else {
         await api.apply(
           editRow.date,
@@ -88,6 +111,8 @@ export default function MyPage() {
       leave:         { label: '有給', bg: '#E6F1FB', color: '#185FA5' },
       leave_pending: { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
       rejected:      { label: '差戻し', bg: '#FCEBEB', color: '#A32D2D' },
+      substitute_work:    { label: '振替出勤', bg: '#FFF4E5', color: '#A05A00' },
+    substitute_holiday: { label: '振替休日', bg: '#E6F1FB', color: '#185FA5' },
     };
     const s = map[status] || { label: status, bg: '#f5f5f5', color: '#888' };
     return <span style={{ fontSize: 10, borderRadius: 3, padding: '1px 5px', background: s.bg, color: s.color }}>{s.label}</span>;
@@ -129,6 +154,47 @@ export default function MyPage() {
             {holMode ? '有給申請する' : '申請・保存する'}
           </button>
           <button onClick={closeEdit} style={s.cancelBtn}>キャンセル</button>
+
+          <hr style={{ border: 'none', borderTop: '0.5px solid #eee', margin: '12px 0' }} />
+          <div style={s.flabel}>振替申請</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <button
+              onClick={() => setSubMode(m => m === 'work' ? null : 'work')}
+              style={{
+                borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500,
+                cursor: 'pointer', border: '0.5px solid',
+                background: subMode === 'work' ? '#FFF4E5' : 'white',
+                borderColor: subMode === 'work' ? '#F0A500' : '#ddd',
+                color: subMode === 'work' ? '#A05A00' : '#888',
+              }}
+            >
+              {subMode === 'work' ? '振替出勤申請中' : '振替出勤にする'}
+            </button>
+            <button
+              onClick={async () => {
+                if (subMode === 'holiday') { setSubMode(null); return; }
+                try {
+                  const bal = await api.substituteBalance();
+                  if (bal.balance <= 0) {
+                    setMessage('エラー: 振替出勤の残数が0です');
+                    return;
+                  }
+                  setSubMode('holiday');
+                } catch(err) {
+                  setMessage('エラー: ' + err.message);
+                }
+              }}
+              style={{
+                borderRadius: 8, padding: '10px 8px', fontSize: 12, fontWeight: 500,
+                cursor: 'pointer', border: '0.5px solid',
+                background: subMode === 'holiday' ? '#E6F1FB' : 'white',
+                borderColor: subMode === 'holiday' ? '#185FA5' : '#ddd',
+                color: subMode === 'holiday' ? '#185FA5' : '#888',
+              }}
+            >
+              {subMode === 'holiday' ? '振替休日申請中' : '振替休日にする'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

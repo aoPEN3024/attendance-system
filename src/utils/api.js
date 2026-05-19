@@ -20,11 +20,11 @@ export const api = {
   login: (employeeId, password) =>
     gasRequest({ action: 'auth/login', employeeId, password }),
 
-  punch: (type, date, time, siteId, breaks) =>
-    gasRequest({ action: 'attendance/punch', type, date, time, siteId, ...breaks }),
+  punch: (type, date, time, siteId, breaks, substituteType) =>
+    gasRequest({ action: 'attendance/punch', type, date, time, siteId, ...breaks, ...(substituteType ? { substituteType } : {}) }),
 
-  apply: (date, clockIn, clockOut, siteId, breaks, reason) =>
-    gasRequest({ action: 'attendance/apply', date, clockIn, clockOut, siteId, ...breaks, reason }),
+  apply: (date, clockIn, clockOut, siteId, breaks, reason, substituteType) =>
+    gasRequest({ action: 'attendance/apply', date, clockIn, clockOut, siteId, ...breaks, reason, ...(substituteType ? { substituteType } : {}) }),
 
   today: (date) =>
     gasRequest({ action: 'attendance/today', date }),
@@ -54,6 +54,8 @@ export const api = {
     gasRequest({ action: 'admin/close', yearMonth }),
 
   sites: () => gasRequest({ action: 'sites/list' }),
+  substituteBalance: () =>
+    gasRequest({ action: 'attendance/substitute/balance' }),
   adminExportCsv: (yearMonth) => {
     const token = localStorage.getItem('token');
     const query = new URLSearchParams({ action: 'admin/export/csv', token, yearMonth }).toString();

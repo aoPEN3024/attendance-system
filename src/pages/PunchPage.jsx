@@ -25,6 +25,7 @@ export default function PunchPage() {
   const [breaks, setBreaks]           = useState({ breakAm: false, breakNoon: false, breakPm: false });
   const [loading, setLoading]         = useState(false);
   const [message, setMessage]         = useState('');
+  const [isSubstitute, setIsSubstitute] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(nowTime()), 1000);
@@ -78,7 +79,8 @@ const loadTodayData = async () => {
       today(),
       nowTime(),
       siteId,
-      { breakAm: 'false', breakNoon: 'false', breakPm: 'false' }
+      { breakAm: 'false', breakNoon: 'false', breakPm: 'false' },
+      isSubstitute && type === 'clockIn' ? 'substitute_work' : null
     );
     setMessage(result.message);
     await loadTodayData();
@@ -212,6 +214,30 @@ const toggleBreak = async (key) => {
               <option value="">現場を選択...</option>
               {sites.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
             </select>
+          </div>
+
+          {/* 振替出勤 */}
+          <div style={s.sectionLabel}>振替出勤</div>
+          <div style={{ marginBottom: 12 }}>
+            <button
+              onClick={() => setIsSubstitute(prev => !prev)}
+              style={{
+                width: '100%',
+                borderRadius: 8,
+                padding: '10px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                border: '0.5px solid',
+                background: isSubstitute ? '#FFF4E5' : 'var(--color-background-primary)',
+                borderColor: isSubstitute ? '#F0A500' : 'var(--color-border-secondary)',
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 500, color: isSubstitute ? '#A05A00' : 'var(--color-text-secondary)' }}>
+                {isSubstitute ? '振替出勤として申請中（タップで取消）' : 'この出勤を振替出勤にする'}
+              </span>
+            </button>
           </div>
 
           {/* 休憩 */}

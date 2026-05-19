@@ -21,6 +21,8 @@ const statusBadge = (status) => {
     leave:         { label: '有給',      bg: '#E6F1FB', color: '#185FA5' },
     leave_pending: { label: '有給申請中', bg: '#FFF4E5', color: '#A05A00' },
     rejected:      { label: '差戻し',    bg: '#FCEBEB', color: '#A32D2D' },
+    substitute_work:    { label: '振替出勤', bg: '#FFF4E5', color: '#A05A00' },
+    substitute_holiday: { label: '振替休日', bg: '#E6F1FB', color: '#185FA5' },
   };
   const s = map[status] || { label: status, bg: '#f5f5f5', color: '#888' };
   return <span style={{ fontSize: 10, borderRadius: 3, padding: '1px 5px', background: s.bg, color: s.color }}>{s.label}</span>;
