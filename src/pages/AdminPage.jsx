@@ -500,13 +500,23 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5, marginBottom: 5 }}>
                 <button onClick={() => { setSelectedStaff(staff); setStaffFields({ name: staff.name, role: staff.role, hireDate: staff.hireDate }); setStaffMessage(''); setStaffView('edit'); }}
                   style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>編集</button>
                 <button onClick={() => { setSelectedStaff(staff); setStaffFields({}); setStaffMessage(''); setStaffView('password'); }}
                   style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>PW変更</button>
                 <button onClick={() => { setSelectedStaff(staff); setLeaveGrant(''); setStaffMessage(''); setStaffView('leave'); }}
                   style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #7DC4A0', background: '#E6F7EE', color: '#1A7A4A', cursor: 'pointer' }}>有給付与</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
+                <button onClick={async () => {
+                  try {
+                    const result = await api.payslipUpload(staff.employeeId);
+                    window.open(result.folderUrl, '_blank');
+                  } catch(err) { alert('エラー: ' + err.message); }
+                }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', cursor: 'pointer' }}>
+                  給与明細UP
+                </button>
                 <button onClick={async () => {
                   if (!window.confirm(`${staff.name}を${staff.active ? '無効' : '有効'}にしますか？`)) return;
                   try {
@@ -618,31 +628,17 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5, marginBottom: 5 }}>
-                <button onClick={() => { setSelectedStaff(staff); setStaffFields({ name: staff.name, role: staff.role, hireDate: staff.hireDate }); setStaffMessage(''); setStaffView('edit'); }}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <button onClick={() => { setSelectedSite(site); setSiteFields({ siteName: site.siteName }); setSiteMessage(''); setSiteView('edit'); }}
                   style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>編集</button>
-                <button onClick={() => { setSelectedStaff(staff); setStaffFields({}); setStaffMessage(''); setStaffView('password'); }}
-                  style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>PW変更</button>
-                <button onClick={() => { setSelectedStaff(staff); setLeaveGrant(''); setStaffMessage(''); setStaffView('leave'); }}
-                  style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #7DC4A0', background: '#E6F7EE', color: '#1A7A4A', cursor: 'pointer' }}>有給付与</button>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
                 <button onClick={async () => {
+                  if (!window.confirm(`${site.siteName}を${site.active ? '無効' : '有効'}にしますか？`)) return;
                   try {
-                    const result = await api.payslipUpload(staff.employeeId);
-                    window.open(result.folderUrl, '_blank');
+                    await api.adminSiteToggle(site.siteId);
+                    await loadSites();
                   } catch(err) { alert('エラー: ' + err.message); }
-                }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', cursor: 'pointer' }}>
-                  給与明細UP
-                </button>
-                <button onClick={async () => {
-                  if (!window.confirm(`${staff.name}を${staff.active ? '無効' : '有効'}にしますか？`)) return;
-                  try {
-                    await api.adminEmployeeToggle(staff.employeeId);
-                    await loadStaff();
-                  } catch(err) { alert('エラー: ' + err.message); }
-                }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: `0.5px solid ${staff.active ? '#F09595' : '#7DC4A0'}`, background: staff.active ? '#FCEBEB' : '#E6F7EE', color: staff.active ? '#A32D2D' : '#1A7A4A', cursor: 'pointer' }}>
-                  {staff.active ? '無効化' : '有効化'}
+                }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: `0.5px solid ${site.active ? '#F09595' : '#7DC4A0'}`, background: site.active ? '#FCEBEB' : '#E6F7EE', color: site.active ? '#A32D2D' : '#1A7A4A', cursor: 'pointer' }}>
+                  {site.active ? '無効化' : '有効化'}
                 </button>
               </div>
             </div>
