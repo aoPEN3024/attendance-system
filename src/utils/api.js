@@ -79,3 +79,15 @@ export const api = {
   adminEmployeeToggle: (employeeId) =>
     gasRequest({ action: 'admin/employee/toggle', employeeId }),
 };
+
+adminSitesList: () =>
+    gasRequest({ action: 'admin/sites/list' }),
+
+  adminSiteAdd: (siteId, siteName) =>
+    gasRequest({ action: 'admin/site/add', siteId, siteName }),
+
+  adminSiteEdit: (siteId, siteName) =>
+    gasRequest({ action: 'admin/site/edit', siteId, siteName }),
+
+  adminSiteToggle: (siteId) =>
+    gasRequest({ action: 'admin/site/toggle', siteId }),
