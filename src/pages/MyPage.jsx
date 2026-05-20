@@ -144,6 +144,17 @@ export default function MyPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('この打刻申請を削除しますか？')) return;
+    try {
+      await api.attendanceDelete(editRow.logId);
+      await loadMonthly();
+      closeEdit();
+    } catch(err) {
+      setMessage('エラー: ' + err.message);
+    }
+  };
+
   // ── 編集画面 ──────────────────────────────────────────
   if (pwMode) return (
     <div style={s.page}>
@@ -259,6 +270,14 @@ export default function MyPage() {
             {holMode ? '有給申請する' : subMode === 'work' ? '振替出勤申請する' : subMode === 'holiday' ? '振替休日申請する' : '申請・保存する'}
           </button>
           <button onClick={closeEdit} style={s.cancelBtn}>キャンセル</button>
+
+          {editRow?.status === 'rejected' && (
+            <button onClick={handleDelete} style={{ width: '100%', borderRadius: 10, padding: 11, fontSize: 13, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', cursor: 'pointer', marginTop: 8 }}>
+              この申請を削除する
+            </button>
+          )}
+
+
         </div>
       </div>
     </div>

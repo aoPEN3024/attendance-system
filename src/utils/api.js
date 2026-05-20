@@ -123,5 +123,11 @@ export const api = {
 
   changePassword: (currentPassword, newPassword) =>
     gasRequest({ action: 'auth/change-password', currentPassword, newPassword }),
-  
+
+  adminDeleteLog: (logId) =>
+    gasRequest({ action: 'admin/log/delete', logId }),
+
+  attendanceDelete: (logId) =>
+    gasRequest({ action: 'attendance/delete', logId }),
+
 };

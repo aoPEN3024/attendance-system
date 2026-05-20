@@ -351,16 +351,21 @@ export default function AdminPage() {
                   <div onClick={() => openEdit(row)} style={{ fontSize: 12, fontWeight: 500, textAlign: 'right', cursor: 'pointer' }}>{row.workDisplay || '--'}</div>
                   <div onClick={() => openEdit(row)} style={{ cursor: 'pointer' }}>{statusBadge(row.status)}</div>
                   <div>
-                    {(row.status === 'confirmed' || row.status === 'leave') && (
+                    {(row.status === 'confirmed' || row.status === 'leave' || row.status === 'rejected') && (
                       <button onClick={async () => {
-                        if (!window.confirm('この打刻を取り消しますか？')) return;
+                        const isRejected = row.status === 'rejected';
+                        if (!window.confirm(isRejected ? 'この打刻を削除しますか？' : 'この打刻を取り消しますか？')) return;
                         try {
-                          await api.adminApprove(row.logId, 'rejected', '');
+                          if (isRejected) {
+                            await api.adminDeleteLog(row.logId);
+                          } else {
+                            await api.adminApprove(row.logId, 'rejected', '');
+                          }
                           await loadEmpDetail(selectedEmp);
                           await loadEmployees();
                         } catch(err) { alert('エラー：' + err.message); }
                       }} style={{ fontSize: 9, padding: '2px 5px', borderRadius: 4, border: '0.5px solid #F09595', background: 'white', color: '#A32D2D', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        取消
+                        {row.status === 'rejected' ? '削除' : '取消'}
                       </button>
                     )}
                   </div>
