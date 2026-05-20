@@ -58,6 +58,10 @@ export default function MyPage() {
   const [subMode, setSubMode]       = useState(null);
   const [reason, setReason]         = useState('');
   const [message, setMessage]       = useState('');
+  const [pwMode, setPwMode]           = useState(false);
+  const [currentPw, setCurrentPw]     = useState('');
+  const [newPw, setNewPw]             = useState('');
+  const [pwMessage, setPwMessage]     = useState('');
 
   useEffect(() => { loadMonthly(); }, [yearMonth]);
   useEffect(() => {
@@ -141,6 +145,33 @@ export default function MyPage() {
   };
 
   // ── 編集画面 ──────────────────────────────────────────
+  if (pwMode) return (
+    <div style={s.page}>
+      <div style={s.card}>
+        <div style={s.topbar}>
+          <button onClick={() => { setPwMode(false); setPwMessage(''); }} style={s.backBtn}>‹ 戻る</button>
+          <div style={s.topTitle}>パスワード変更</div>
+        </div>
+        <div style={{ padding: '12px 16px' }}>
+          <div style={s.flabel}>現在のパスワード</div>
+          <input type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="現在のパスワード" style={{ ...s.timeInput, marginBottom: 12 }} />
+          <div style={s.flabel}>新しいパスワード</div>
+          <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="新しいパスワード" style={{ ...s.timeInput, marginBottom: 12 }} />
+          {pwMessage && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: pwMessage.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: pwMessage.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{pwMessage}</div>}
+          <button onClick={async () => {
+            setPwMessage('');
+            try {
+              const result = await api.changePassword(currentPw, newPw);
+              setPwMessage(result.message);
+              setTimeout(() => { setPwMode(false); setPwMessage(''); setCurrentPw(''); setNewPw(''); }, 1500);
+            } catch(err) { setPwMessage('エラー: ' + err.message); }
+          }} style={s.saveBtn}>変更する</button>
+          <button onClick={() => { setPwMode(false); setPwMessage(''); }} style={s.cancelBtn}>キャンセル</button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (editRow) return (
     <div style={s.page}>
       <div style={s.card}>
@@ -242,6 +273,7 @@ export default function MyPage() {
       <div style={s.card}>
         <div style={s.topbar}>
           <div style={s.topTitle}>マイページ</div>
+          <button onClick={() => setPwMode(true)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#888', cursor: 'pointer', marginRight: 6 }}>PW変更</button>
           <span style={{ fontSize: 12, color: '#888' }}>{user?.name}</span>
         </div>
 

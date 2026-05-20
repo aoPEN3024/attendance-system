@@ -120,5 +120,8 @@ export const api = {
 
   adminApproveAll: (targetEmployeeId, yearMonth) =>
     gasRequest({ action: 'admin/approve/all', targetEmployeeId, yearMonth }),
+
+  changePassword: (currentPassword, newPassword) =>
+    gasRequest({ action: 'auth/change-password', currentPassword, newPassword }),
   
 };
