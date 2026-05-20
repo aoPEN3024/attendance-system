@@ -278,6 +278,24 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+        {empData && empData.rows.some(r => r.status === 'pending' || r.status === 'leave_pending') && (
+          <div style={{ padding: '8px 14px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
+            <button
+              onClick={async () => {
+                if (!window.confirm('全ての申請を一括承認しますか？')) return;
+                try {
+                  const result = await api.adminApproveAll(selectedEmp.employeeId, yearMonth);
+                  alert(result.message);
+                  await loadEmpDetail(selectedEmp);
+                  await loadEmployees();
+                } catch(err) { alert('エラー：' + err.message); }
+              }}
+              style={{ width: '100%', padding: '8px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 8, cursor: 'pointer' }}
+            >
+              この月の申請を全て承認する
+            </button>
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', padding: '7px 14px', borderBottom: '0.5px solid #eee' }}>
           <button onClick={() => changeMonth(-1)} style={s.monthBtn}>‹</button>
           <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 500 }}>{yearMonth.replace('-','年')}月</div>

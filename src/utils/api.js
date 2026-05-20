@@ -117,4 +117,8 @@ export const api = {
 
   payslipDownload: (fileId) =>
     gasRequest({ action: 'payslip/download', fileId }),
+
+  adminApproveAll: (targetEmployeeId, yearMonth) =>
+    gasRequest({ action: 'admin/approve/all', targetEmployeeId, yearMonth }),
+  
 };
