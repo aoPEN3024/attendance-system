@@ -286,6 +286,15 @@ export default function AdminPage() {
                 try {
                   const result = await api.adminApproveAll(selectedEmp.employeeId, yearMonth);
                   alert(result.message);
+                  const getDetailDays = (yearMonth) => {
+                    const [y, m] = yearMonth.split('-').map(Number);
+                    const count = new Date(y, m, 0).getDate();
+                    const days = [];
+                    for (let i = 1; i <= count; i++) {
+                      days.push(`${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`);
+                    }
+                    return days;
+                  };
                   await loadEmpDetail(selectedEmp);
                   await loadEmployees();
                 } catch(err) { alert('エラー：' + err.message); }
@@ -305,27 +314,68 @@ export default function AdminPage() {
           {['日付','出勤','退勤','実働','区分'].map(h => <span key={h} style={{ fontSize: 10, color: '#aaa' }}>{h}</span>)}
         </div>
         {!empData && <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
-        {empData?.rows.map(row => (
-          <div key={row.logId}>
-            <div onClick={() => openEdit(row)} style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px', gap: 3, padding: '9px 14px', borderBottom: row.status === 'pending' || row.status === 'leave_pending' ? 'none' : '0.5px solid #eee', alignItems: 'center', cursor: 'pointer' }}>
-              <div style={{ fontSize: 12, color: '#666' }}>{formatDateJp(row.date)}</div>
-              <div style={{ fontSize: 12, color: row.clockIn ? '#222' : '#ccc', textAlign: 'right' }}>{row.clockIn || '--'}</div>
-              <div style={{ fontSize: 12, color: row.clockOut ? '#222' : '#ccc', textAlign: 'right' }}>{row.clockOut || '--'}</div>
-              <div style={{ fontSize: 12, fontWeight: 500, textAlign: 'right' }}>{row.workDisplay || '--'}</div>
-              <div>{statusBadge(row.status)}</div>
-            </div>
-            {(row.status === 'pending' || row.status === 'leave_pending') && (
-              <div style={{ padding: '6px 14px 10px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
-                {renderApplyDetail(row)}
-                {row.reason && <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>{row.reason.replace(/\s*\[申請内容:.*\]/, '').trim()}</div>}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => handleApprove(row.logId, 'approved')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}>承認</button>
-                  <button onClick={() => handleApprove(row.logId, 'rejected')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 6, cursor: 'pointer' }}>差戻し</button>
-                </div>
+        {empData && (() => {
+          const rowMap = {};
+          empData.rows.forEach(r => { rowMap[r.date] = r; });
+          const [y, m] = yearMonth.split('-').map(Number);
+          const count = new Date(y, m, 0).getDate();
+          const DOW = ['日','月','火','水','木','金','土'];
+          const days = [];
+          for (let i = 1; i <= count; i++) {
+            days.push(`${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`);
+          }
+          return days.map(date => {
+            const row = rowMap[date];
+            const d = new Date(date + 'T00:00:00');
+            const dow = d.getDay();
+            const dateColor = dow === 0 ? '#E24B4A' : dow === 6 ? '#1855A0' : '#666';
+            const dateLabel = `${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`;
+            if (!row) return (
+              <div key={date} onClick={() => openEdit({ date, clockIn:'', clockOut:'', breaks:{}, site1Id:'', site1Min:0, site2Id:'', site2Min:0, site3Id:'', site3Min:0, status:'', reason:'', logId: date })} style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px', gap: 3, padding: '9px 14px', borderBottom: '0.5px solid #eee', alignItems: 'center', cursor: 'pointer' }}>
+                <div style={{ fontSize: 12, color: dateColor }}>{dateLabel}</div>
+                <div style={{ fontSize: 12, color: '#ddd', textAlign: 'right' }}>--</div>
+                <div style={{ fontSize: 12, color: '#ddd', textAlign: 'right' }}>--</div>
+                <div style={{ fontSize: 12, color: '#ddd', textAlign: 'right' }}>--</div>
+                <div></div>
               </div>
-            )}
-          </div>
-        ))}
+            );
+            return (
+              <div key={row.logId}>
+                <div onClick={() => openEdit(row)} style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px', gap: 3, padding: '9px 14px', borderBottom: row.status === 'pending' || row.status === 'leave_pending' ? 'none' : '0.5px solid #eee', alignItems: 'center', cursor: 'pointer' }}>
+                  <div style={{ fontSize: 12, color: dateColor }}>{dateLabel}</div>
+                  <div style={{ fontSize: 12, color: row.clockIn ? '#222' : '#ccc', textAlign: 'right' }}>{row.clockIn || '--'}</div>
+                  <div style={{ fontSize: 12, color: row.clockOut ? '#222' : '#ccc', textAlign: 'right' }}>{row.clockOut || '--'}</div>
+                  <div style={{ fontSize: 12, fontWeight: 500, textAlign: 'right' }}>{row.workDisplay || '--'}</div>
+                  <div>{statusBadge(row.status)}</div>
+                </div>
+                {(row.status === 'pending' || row.status === 'leave_pending') && (
+                  <div style={{ padding: '6px 14px 10px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
+                    {renderApplyDetail(row)}
+                    {row.reason && <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>{row.reason.replace(/\s*\[申請内容:.*\]/, '').trim()}</div>}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => handleApprove(row.logId, 'approved')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}>承認</button>
+                      <button onClick={() => handleApprove(row.logId, 'rejected')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 6, cursor: 'pointer' }}>差戻し</button>
+                    </div>
+                  </div>
+                )}
+                {(row.status === 'confirmed' || row.status === 'leave') && (
+                  <div style={{ padding: '2px 14px 6px', borderBottom: '0.5px solid #eee' }}>
+                    <button onClick={async () => {
+                      if (!window.confirm('この打刻を取り消しますか？')) return;
+                      try {
+                        await api.adminApprove(row.logId, 'rejected', '');
+                        await loadEmpDetail(selectedEmp);
+                        await loadEmployees();
+                      } catch(err) { alert('エラー：' + err.message); }
+                    }} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 4, border: '0.5px solid #F09595', background: 'white', color: '#A32D2D', cursor: 'pointer' }}>
+                      取消
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          });
+        })()}
         <div style={{ height: 20 }} />
       </div>
     </div>
@@ -527,16 +577,6 @@ export default function AdminPage() {
                   style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #7DC4A0', background: '#E6F7EE', color: '#1A7A4A', cursor: 'pointer' }}>有給付与</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
-                <button onClick={async () => {
-                  try {
-                    alert('ボタン押した');
-                    const result = await api.payslipUpload(staff.employeeId);
-                    alert('result: ' + JSON.stringify(result));
-                    window.open(result.folderUrl, '_blank');
-                  } catch(err) { alert('エラー: ' + err.message); }
-                }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', cursor: 'pointer' }}>
-                  給与明細UP
-                </button>
                 <button onClick={async () => {
                   if (!window.confirm(`${staff.name}を${staff.active ? '無効' : '有効'}にしますか？`)) return;
                   try {
