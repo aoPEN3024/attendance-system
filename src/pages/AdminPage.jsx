@@ -358,20 +358,27 @@ export default function AdminPage() {
                     </div>
                   </div>
                 )}
-                {(row.status === 'confirmed' || row.status === 'leave') && (
-                  <div style={{ padding: '2px 14px 6px', borderBottom: '0.5px solid #eee' }}>
-                    <button onClick={async () => {
-                      if (!window.confirm('この打刻を取り消しますか？')) return;
-                      try {
-                        await api.adminApprove(row.logId, 'rejected', '');
-                        await loadEmpDetail(selectedEmp);
-                        await loadEmployees();
-                      } catch(err) { alert('エラー：' + err.message); }
-                    }} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 4, border: '0.5px solid #F09595', background: 'white', color: '#A32D2D', cursor: 'pointer' }}>
-                      取消
-                    </button>
+                <div style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px 36px', gap: 3, padding: '9px 14px', borderBottom: row.status === 'pending' || row.status === 'leave_pending' ? 'none' : '0.5px solid #eee', alignItems: 'center' }}>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: dateColor, cursor: 'pointer' }}>{dateLabel}</div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: row.clockIn ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockIn || '--'}</div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: row.clockOut ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockOut || '--'}</div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, fontWeight: 500, textAlign: 'right', cursor: 'pointer' }}>{row.workDisplay || '--'}</div>
+                  <div onClick={() => openEdit(row)} style={{ cursor: 'pointer' }}>{statusBadge(row.status)}</div>
+                  <div>
+                    {(row.status === 'confirmed' || row.status === 'leave') && (
+                      <button onClick={async () => {
+                        if (!window.confirm('この打刻を取り消しますか？')) return;
+                        try {
+                          await api.adminApprove(row.logId, 'rejected', '');
+                          await loadEmpDetail(selectedEmp);
+                          await loadEmployees();
+                        } catch(err) { alert('エラー：' + err.message); }
+                      }} style={{ fontSize: 9, padding: '2px 5px', borderRadius: 4, border: '0.5px solid #F09595', background: 'white', color: '#A32D2D', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        取消
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             );
           });
