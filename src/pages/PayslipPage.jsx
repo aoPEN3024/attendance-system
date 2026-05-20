@@ -51,14 +51,31 @@ export default function PayslipPage() {
               <div style={{ fontSize: 13, fontWeight: 500, color: '#222' }}>{file.fileName}</div>
               <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{file.createdAt}</div>
             </div>
-            <a
-              href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: 11, padding: '6px 12px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', textDecoration: 'none', flexShrink: 0 }}
+      
+              <button
+              onClick={async () => {
+                try {
+                  const result = await api.payslipDownload(file.fileId);
+                  const binary = atob(result.base64);
+                  const bytes  = new Uint8Array(binary.length);
+                  for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                  }
+                  const blob = new Blob([bytes], { type: result.mimeType });
+                  const url  = URL.createObjectURL(blob);
+                  const a    = document.createElement('a');
+                  a.href     = url;
+                  a.download = result.fileName;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch(err) {
+                  alert('エラー: ' + err.message);
+                }
+              }}
+              style={{ fontSize: 11, padding: '6px 12px', borderRadius: 6, border: '0.5px solid #B5D4F4', background: '#E6F1FB', color: '#1855A0', cursor: 'pointer', flexShrink: 0 }}
             >
               ダウンロード
-            </a>
+            </button>
           </div>
         ))}
 

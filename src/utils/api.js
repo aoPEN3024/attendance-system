@@ -114,4 +114,7 @@ export const api = {
 
   payslipUpload: (targetEmployeeId) =>
     gasRequest({ action: 'payslip/upload', targetEmployeeId }),
+
+  payslipDownload: (fileId) =>
+    gasRequest({ action: 'payslip/download', fileId }),
 };
