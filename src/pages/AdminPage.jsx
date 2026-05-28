@@ -347,7 +347,7 @@ export default function AdminPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px 36px', gap: 3, padding: '9px 14px', borderBottom: row.status === 'pending' || row.status === 'leave_pending' ? 'none' : '0.5px solid #eee', alignItems: 'center' }}>
                   <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: dateColor, cursor: 'pointer' }}>{dateLabel}</div>
                   <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: row.clockIn ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockIn || '--'}</div>
-                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: row.clockOut ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockOut || '--'}</div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: row.clockOut ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockOut ? (row.clockIn && row.clockOut < row.clockIn ? `翌${row.clockOut}` : row.clockOut) : '--'}</div>
                   <div onClick={() => openEdit(row)} style={{ fontSize: 12, fontWeight: 500, textAlign: 'right', cursor: 'pointer' }}>{row.workDisplay || '--'}</div>
                   <div onClick={() => openEdit(row)} style={{ cursor: 'pointer' }}>{statusBadge(row.status)}</div>
                   <div>

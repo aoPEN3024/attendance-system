@@ -348,7 +348,7 @@ export default function MyPage() {
                 {`${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`}
               </div>
               <div style={{ fontSize: 12, color: row?.clockIn ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockIn || '--'}</div>
-              <div style={{ fontSize: 12, color: row?.clockOut ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockOut || '--'}</div>
+              <div style={{ fontSize: 12, color: row?.clockOut ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockOut ? (row.clockIn && row.clockOut < row.clockIn ? `翌${row.clockOut}` : row.clockOut) : '--'}</div>
               <div style={{ fontSize: 12, fontWeight: 500, color: '#222', textAlign: 'right' }}>{row?.workDisplay || '--'}</div>
               <div><StatusBadge status={row?.status} /></div>
             </div>
