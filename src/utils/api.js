@@ -12,6 +12,7 @@ async function gasRequest(params) {
   });
   
   const json = await res.json();
+  console.log('レスポンス:', json); 
   if (!json.success) {
     // 認証エラー（トークン無効・期限切れ）を検知
     if (json.code === 401 && token) {
