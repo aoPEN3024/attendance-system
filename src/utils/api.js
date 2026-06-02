@@ -29,6 +29,7 @@ async function gasRequest(params) {
   return json.data;
 }
 
+
 export const api = {
   login: (employeeId, password) =>
     gasRequest({ action: 'auth/login', employeeId, password }),
