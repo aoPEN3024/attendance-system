@@ -12,12 +12,8 @@ async function gasRequest(params) {
   });
   
   const json = await res.json();
-  console.log('レスポンス:', json);
-  console.log('現在のtoken:', token);  // ← 追加
-  console.log('code判定:', json.code === 401, 'token判定:', !!token);  // ← 追加
   if (!json.success) {
     if (json.code === 401 && token) {
-      console.log('★認証エラー検知！リロードします');  // ← 追加
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       alert('セッションの有効期限が切れました。再度ログインしてください。');
