@@ -12,7 +12,17 @@ async function gasRequest(params) {
   });
   
   const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'エラーが発生しました');
+  if (!json.success) {
+    // 認証エラー（トークン無効・期限切れ）を検知
+    if (json.code === 401 && token) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      alert('セッションの有効期限が切れました。再度ログインしてください。');
+      window.location.reload();
+      return;
+    }
+    throw new Error(json.error || 'エラーが発生しました');
+    }
   return json.data;
 }
 
