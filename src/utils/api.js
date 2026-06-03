@@ -122,6 +122,9 @@ export const api = {
   payslipList: () =>
     gasRequest({ action: 'payslip/list' }),
 
+  adminSiteDelete: (siteId) =>
+    gasRequest({ action: 'admin/site/delete', siteId }),
+
   payslipUpload: (targetEmployeeId) =>
     gasRequest({ action: 'payslip/upload', targetEmployeeId }),
 
