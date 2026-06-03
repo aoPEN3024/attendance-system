@@ -15,7 +15,19 @@ const nowTime = () => {
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 };
 
-const emptySite = () => ({ siteId: '', minutes: '' });
+const emptySite = () => ({ siteId: '', days: '' });
+
+// 日数⇔分の変換（1日=7.5h=450分）
+const MIN_PER_DAY = 450;
+const daysToMin = (d) => Math.round(Number(d) * MIN_PER_DAY) || 0;
+const minToDays = (m) => Number(m) ? (Number(m) / MIN_PER_DAY) : '';
+const DAY_OPTIONS = [
+  { value: '',     label: '日数' },
+  { value: '0.25', label: '0.25日' },
+  { value: '0.5',  label: '0.5日' },
+  { value: '0.75', label: '0.75日' },
+  { value: '1',    label: '1.0日' },
+];
 
 export default function PunchPage() {
   const { user, logout } = useAuth();
@@ -47,9 +59,9 @@ export default function PunchPage() {
       }
       setTodayData(data);
       setSites([
-        { siteId: data.site1Id || '', minutes: data.site1Min || '' },
-        { siteId: data.site2Id || '', minutes: data.site2Min || '' },
-        { siteId: data.site3Id || '', minutes: data.site3Min || '' },
+        { siteId: data.site1Id || '', days: minToDays(data.site1Min) },
+        { siteId: data.site2Id || '', days: minToDays(data.site2Min) },
+        { siteId: data.site3Id || '', days: minToDays(data.site3Min) },
       ]);
       if (data.breaks) {
         setBreaks({
@@ -76,9 +88,10 @@ export default function PunchPage() {
     setLoading(true);
     setMessage('');
     try {
+      const sitesForApi = sites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
       const result = await api.punch(
         type, today(), nowTime(),
-        sites,
+        sitesForApi,
         { breakAm: 'false', breakNoon: 'false', breakPm: 'false' },
         isSubstitute && type === 'clockIn' ? 'substitute_work' : null
       );
@@ -96,7 +109,8 @@ export default function PunchPage() {
     setSites(newSites);
     if (todayData?.clockIn) {
       try {
-        await api.punch('updateSites', today(), nowTime(), newSites, {});
+        const sitesForApi = newSites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
+        await api.punch('updateSites', today(), nowTime(), sitesForApi, {});
       } catch (err) {
         console.log('現場更新エラー:', err.message);
       }
@@ -108,7 +122,8 @@ export default function PunchPage() {
     setBreaks(newBreaks);
     if (todayData?.clockIn) {
       try {
-        await api.punch('updateBreak', today(), nowTime(), sites, {
+        const sitesForApi = sites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
+        await api.punch('updateBreak', today(), nowTime(), sitesForApi, {
           breakAm:   newBreaks.breakAm   ? 'true' : 'false',
           breakNoon: newBreaks.breakNoon ? 'true' : 'false',
           breakPm:   newBreaks.breakPm   ? 'true' : 'false',
@@ -204,7 +219,7 @@ export default function PunchPage() {
           {/* 現場選択（3つ） */}
           <div style={s.sectionLabel}>現場・滞在時間</div>
           {sites.map((site, index) => (
-            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 6, marginBottom: 8 }}>
+            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6, marginBottom: 8 }}>
               <div style={s.selectWrap}>
                 <i className="ti ti-building" style={{ fontSize: 13, color: '#888', marginRight: 6 }} />
                 <select
@@ -217,18 +232,19 @@ export default function PunchPage() {
                 </select>
               </div>
               <div style={{ ...s.selectWrap, justifyContent: 'center' }}>
-                <input
-                  type="number"
-                  value={site.minutes}
-                  onChange={e => updateSite(index, 'minutes', e.target.value)}
-                  placeholder="分"
-                  min="0"
+                <select
+                  value={site.days}
+                  onChange={e => updateSite(index, 'days', e.target.value)}
                   style={{ width: '100%', border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', textAlign: 'center' }}
-                />
+                >
+                  {DAY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
               </div>
             </div>
           ))}
-          <div style={{ fontSize: 11, color: '#aaa', textAlign: 'right', marginBottom: 12 }}>滞在時間は分単位で入力</div>
+          <div style={{ fontSize: 11, color: '#888', textAlign: 'right', marginBottom: 12 }}>
+            合計: <strong>{sites.reduce((sum, s) => sum + (Number(s.days) || 0), 0)}日</strong>
+          </div>
 
           {/* 振替出勤 */}
           <div style={s.sectionLabel}>振替出勤</div>
