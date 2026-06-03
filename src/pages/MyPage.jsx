@@ -7,6 +7,18 @@ const toYearMonth = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// 日数⇔分の変換（1日=7.5h=450分）
+const MIN_PER_DAY = 450;
+const daysToMin = (d) => Math.round(Number(d) * MIN_PER_DAY) || 0;
+const minToDays = (m) => Number(m) ? (Number(m) / MIN_PER_DAY) : '';
+const DAY_OPTIONS = [
+  { value: '',     label: '日数' },
+  { value: '0.25', label: '0.25日' },
+  { value: '0.5',  label: '0.5日' },
+  { value: '0.75', label: '0.75日' },
+  { value: '1',    label: '1.0日' },
+];
+
 const getDaysInMonth = (yearMonth) => {
   const [y, m] = yearMonth.split('-').map(Number);
   const days = [];
@@ -97,9 +109,9 @@ export default function MyPage() {
     setEditFields({ clockIn: row?.clockIn || '', clockOut: row?.clockOut || '' });
     setEditBreaks({ am: row?.breaks?.am || false, noon: row?.breaks?.noon || false, pm: row?.breaks?.pm || false });
     setEditSites([
-      { siteId: row?.site1Id || '', minutes: row?.site1Min || '' },
-      { siteId: row?.site2Id || '', minutes: row?.site2Min || '' },
-      { siteId: row?.site3Id || '', minutes: row?.site3Min || '' },
+      { siteId: row?.site1Id || '', days: minToDays(row?.site1Min) },
+      { siteId: row?.site2Id || '', days: minToDays(row?.site2Min) },
+      { siteId: row?.site3Id || '', days: minToDays(row?.site3Min) },
     ]);
     setHolMode(row?.status === 'leave' || row?.status === 'leave_pending');
     setSubMode(null);
@@ -111,27 +123,31 @@ export default function MyPage() {
 
   const handleSave = async () => {
     setMessage('');
+    const editSitesForApi = editSites.map(s => ({
+      siteId: s.siteId,
+      minutes: daysToMin(s.days),
+    }));
     try {
       if (holMode) {
         await api.leaveApply(editRow.date, reason || '有給申請');
         setMessage('有給申請を送信しました');
       } else if (subMode === 'work') {
         await api.apply(
-          editRow.date, editFields.clockIn, editFields.clockOut, editSites,
+          editRow.date, editFields.clockIn, editFields.clockOut, editSitesForApi,
           { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
           reason || '振替出勤申請', 'substitute_work'
         );
         setMessage('振替出勤申請を送信しました');
       } else if (subMode === 'holiday') {
         await api.apply(
-          editRow.date, '00:00', '00:00', editSites,
+          editRow.date, '00:00', '00:00', editSitesForApi,
           { breakAm: 'false', breakNoon: 'false', breakPm: 'false' },
           reason || '振替休日申請', 'substitute_holiday'
         );
         setMessage('振替休日申請を送信しました');
       } else {
         await api.apply(
-          editRow.date, editFields.clockIn, editFields.clockOut, editSites,
+          editRow.date, editFields.clockIn, editFields.clockOut, editSitesForApi,
           { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
           reason || '修正申請'
         );
@@ -193,7 +209,7 @@ export default function MyPage() {
         <div style={{ padding: '12px 16px' }}>
           <div style={s.flabel}>現場・滞在時間</div>
           {editSites.map((site, index) => (
-            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 6, marginBottom: 6, opacity: (holMode || subMode === 'holiday') ? 0.35 : 1, pointerEvents: (holMode || subMode === 'holiday') ? 'none' : 'auto' }}>
+            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6, marginBottom: 6, opacity: (holMode || subMode === 'holiday') ? 0.35 : 1, pointerEvents: (holMode || subMode === 'holiday') ? 'none' : 'auto' }}>
               <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 10px', background: 'white', display: 'flex', alignItems: 'center' }}>
                 <select
                   value={site.siteId}
@@ -205,18 +221,19 @@ export default function MyPage() {
                 </select>
               </div>
               <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 6px', background: 'white' }}>
-                <input
-                  type="number"
-                  value={site.minutes}
-                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, minutes: e.target.value } : s))}
-                  placeholder="分"
-                  min="0"
+                <select
+                  value={site.days}
+                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, days: e.target.value } : s))}
                   style={{ width: '100%', border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', textAlign: 'center' }}
-                />
+                >
+                  {DAY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
               </div>
             </div>
           ))}
-          <div style={{ fontSize: 11, color: '#aaa', textAlign: 'right', marginBottom: 12 }}>滞在時間は分単位で入力</div>
+          <div style={{ fontSize: 11, color: '#888', textAlign: 'right', marginBottom: 12 }}>
+            合計: <strong>{editSites.reduce((sum, s) => sum + (Number(s.days) || 0), 0)}日</strong>
+          </div>
           <div style={s.flabel}>出勤・退勤時刻</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
             <input type="time" value={editFields.clockIn} onChange={e => setEditFields(f => ({...f, clockIn: e.target.value}))} style={s.timeInput} disabled={holMode || subMode === 'holiday'} />
