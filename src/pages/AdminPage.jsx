@@ -14,6 +14,18 @@ const formatDateJp = (dateStr) => {
   return `${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）`;
 };
 
+// 日数⇔分の変換（1日=7.5h=450分）
+const MIN_PER_DAY = 450;
+const daysToMin = (d) => Math.round(Number(d) * MIN_PER_DAY) || 0;
+const minToDays = (m) => Number(m) ? (Number(m) / MIN_PER_DAY) : '';
+const DAY_OPTIONS = [
+  { value: '',     label: '日数' },
+  { value: '0.25', label: '0.25日' },
+  { value: '0.5',  label: '0.5日' },
+  { value: '0.75', label: '0.75日' },
+  { value: '1',    label: '1.0日' },
+];
+
 const statusBadge = (status) => {
   const map = {
     confirmed:          { label: '確定',      bg: '#E6F7EE', color: '#1A7A4A' },
@@ -122,9 +134,9 @@ export default function AdminPage() {
     setEditFields({ clockIn: row.clockIn || '', clockOut: row.clockOut || '' });
     setEditBreaks({ am: row.breaks?.am || false, noon: row.breaks?.noon || false, pm: row.breaks?.pm || false });
     setEditSites([
-      { siteId: row.site1Id || '', minutes: row.site1Min || '' },
-      { siteId: row.site2Id || '', minutes: row.site2Min || '' },
-      { siteId: row.site3Id || '', minutes: row.site3Min || '' },
+      { siteId: row.site1Id || '', days: minToDays(row.site1Min) },
+      { siteId: row.site2Id || '', days: minToDays(row.site2Min) },
+      { siteId: row.site3Id || '', days: minToDays(row.site3Min) },
     ]);
     setMemo('');
     setMessage('');
@@ -138,11 +150,11 @@ export default function AdminPage() {
         clockIn:   editFields.clockIn,
         clockOut:  editFields.clockOut,
         site1Id:   editSites[0]?.siteId || '',
-        site1Min:  editSites[0]?.minutes || 0,
+        site1Min:  daysToMin(editSites[0]?.days),
         site2Id:   editSites[1]?.siteId || '',
-        site2Min:  editSites[1]?.minutes || 0,
+        site2Min:  daysToMin(editSites[1]?.days),
         site3Id:   editSites[2]?.siteId || '',
-        site3Min:  editSites[2]?.minutes || 0,
+        site3Min:  daysToMin(editSites[2]?.days),
         breakAm:   editBreaks.am   ? 'true' : 'false',
         breakNoon: editBreaks.noon ? 'true' : 'false',
         breakPm:   editBreaks.pm   ? 'true' : 'false',
@@ -207,7 +219,7 @@ export default function AdminPage() {
           </div>
           <div style={s.flabel}>現場・滞在時間</div>
           {editSites.map((site, index) => (
-            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 6, marginBottom: 6 }}>
+            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6, marginBottom: 6 }}>
               <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 10px', background: 'white', display: 'flex', alignItems: 'center' }}>
                 <select
                   value={site.siteId}
@@ -219,18 +231,19 @@ export default function AdminPage() {
                 </select>
               </div>
               <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 6px', background: 'white' }}>
-                <input
-                  type="number"
-                  value={site.minutes}
-                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, minutes: e.target.value } : s))}
-                  placeholder="分"
-                  min="0"
+                <select
+                  value={site.days}
+                  onChange={e => setEditSites(prev => prev.map((s, i) => i === index ? { ...s, days: e.target.value } : s))}
                   style={{ width: '100%', border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', textAlign: 'center' }}
-                />
+                >
+                  {DAY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
               </div>
             </div>
           ))}
-          <div style={{ fontSize: 11, color: '#aaa', textAlign: 'right', marginBottom: 12 }}>滞在時間は分単位で入力</div>
+          <div style={{ fontSize: 11, color: '#888', textAlign: 'right', marginBottom: 12 }}>
+            合計: <strong>{editSites.reduce((sum, s) => sum + (Number(s.days) || 0), 0)}日</strong>
+          </div>
           <div style={s.flabel}>出勤・退勤時刻</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
             <input type="time" value={editFields.clockIn} onChange={e => setEditFields(f => ({...f, clockIn: e.target.value}))} style={s.timeInput} />
@@ -704,7 +717,7 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: site.active ? '1fr 1fr' : '1fr 1fr 1fr', gap: 8 }}>
                 <button onClick={() => { setSelectedSite(site); setSiteFields({ siteName: site.siteName }); setSiteMessage(''); setSiteView('edit'); }}
                   style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #ddd', background: 'white', color: '#444', cursor: 'pointer' }}>編集</button>
                 <button onClick={async () => {
@@ -716,6 +729,17 @@ export default function AdminPage() {
                 }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: `0.5px solid ${site.active ? '#F09595' : '#7DC4A0'}`, background: site.active ? '#FCEBEB' : '#E6F7EE', color: site.active ? '#A32D2D' : '#1A7A4A', cursor: 'pointer' }}>
                   {site.active ? '無効化' : '有効化'}
                 </button>
+                {!site.active && (
+                  <button onClick={async () => {
+                    if (!window.confirm(`${site.siteName}を完全に削除しますか？\nこの操作は取り消せません。`)) return;
+                    try {
+                      await api.adminSiteDelete(site.siteId);
+                      await loadSites();
+                    } catch(err) { alert('エラー: ' + err.message); }
+                  }} style={{ fontSize: 11, padding: '6px 0', borderRadius: 6, border: '0.5px solid #A32D2D', background: '#A32D2D', color: 'white', cursor: 'pointer' }}>
+                    削除
+                  </button>
+                )}
               </div>
             </div>
           ))}
