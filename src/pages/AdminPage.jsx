@@ -117,8 +117,6 @@ export default function AdminPage() {
     setView('detail');
     try {
       const result = await api.adminEmployeeMonthly(emp.employeeId, yearMonth);
-      console.log('summary:', result.summary);
-      console.log('rows:', result.rows);
       setEmpData(result);
     } catch (err) {
       console.log('社員詳細取得エラー:', err.message);
