@@ -48,7 +48,7 @@ export default function LoginPage({ onLogin }) {
           </button>
         </form>
         <div style={{ marginTop: 16, borderTop: '0.5px solid #eee', paddingTop: 16 }}>
-          <a href="https://aopen3024.github.io/aostock/" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '11px', fontSize: 14, fontWeight: 500, background: '#FFF8E6', color: '#A07800', border: '1.5px solid #F0C030', borderRadius: 10, textDecoration: 'none', boxSizing: 'border-box' }}>
+          <a href="https://aopen3024.github.io/aoSTOCK/" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '11px', fontSize: 14, fontWeight: 500, background: '#FFF8E6', color: '#A07800', border: '1.5px solid #F0C030', borderRadius: 10, textDecoration: 'none', boxSizing: 'border-box' }}>
             🏭 ao<strong>STOCK</strong>へ
           </a>
         </div>
