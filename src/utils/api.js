@@ -1,19 +1,23 @@
 const GAS_URL = import.meta.env.VITE_GAS_URL;
 
+let sessionExpiredHandled = false;
+
 async function gasRequest(params) {
   const token = localStorage.getItem('token');
   const allParams = token ? { ...params, token } : params;
   const query = new URLSearchParams(allParams).toString();
   const url = `${GAS_URL}?${query}`;
-  
+
   const res = await fetch(url, {
     redirect: 'follow',
     mode: 'cors',
   });
-  
+
   const json = await res.json();
   if (!json.success) {
     if (json.code === 401 && token) {
+      if (sessionExpiredHandled) return; // 二重実行防止
+      sessionExpiredHandled = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       alert('セッションの有効期限が切れました。再度ログインしてください。');
