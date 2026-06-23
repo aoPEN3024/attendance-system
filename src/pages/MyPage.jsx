@@ -335,9 +335,12 @@ export default function MyPage() {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '52px 46px 46px 1fr 42px', gap: 3, padding: '5px 14px', background: '#f5f5f5', borderBottom: '0.5px solid #eee' }}>
-          {['日付','出勤','退勤','実働','区分'].map(h => <span key={h} style={{ fontSize: 10, color: '#aaa' }}>{h}</span>)}
-        </div>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ minWidth: 720 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '52px 46px 46px 60px 42px 120px 140px 140px 140px', gap: 3, padding: '5px 14px', background: '#f5f5f5', borderBottom: '0.5px solid #eee' }}>
+              <span style={{ fontSize: 10, color: '#aaa', position: 'sticky', left: 14, background: '#f5f5f5', zIndex: 1 }}>日付</span>
+              {['出勤','退勤','実働','区分','休憩','現場1','現場2','現場3'].map(h => <span key={h} style={{ fontSize: 10, color: '#aaa' }}>{h}</span>)}
+            </div>
 
         {loading && <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
 
@@ -349,28 +352,52 @@ export default function MyPage() {
           const dateColor = isSun ? '#E24B4A' : isSat ? '#1855A0' : '#666';
           const bgColor = isToday ? '#F5F9FF' : 'white';
 
+          // 休憩表示
+          const breakParts = [
+            row?.breaks?.am   && 'AM',
+            row?.breaks?.noon && '昼',
+            row?.breaks?.pm   && 'PM',
+          ].filter(Boolean);
+          const breakMin = (row?.breaks?.am ? 15 : 0) + (row?.breaks?.noon ? 60 : 0) + (row?.breaks?.pm ? 15 : 0);
+          const breakLabel = breakParts.length ? `${breakParts.join('+')} ${breakMin}分` : '--';
+
+          // 現場名取得
+          const siteName = (siteId) => siteOptions.find(s => s.siteId === siteId)?.siteName || '';
+          const siteDisplay = (id, min) => {
+            if (!id) return '--';
+            const name = siteName(id);
+            const days = min ? (min / 450) : 0;
+            return `${name} ${days}日`;
+          };
+
           return (
             <div
               key={date}
               onClick={() => openEdit(date, row || null)}
               style={{
-                display: 'grid', gridTemplateColumns: '52px 46px 46px 1fr 42px',
+                display: 'grid', gridTemplateColumns: '52px 46px 46px 60px 42px 120px 140px 140px 140px',
                 gap: 3, padding: '8px 14px',
                 borderBottom: '0.5px solid #eee',
                 alignItems: 'center', cursor: 'pointer',
                 background: bgColor,
               }}
             >
-              <div style={{ fontSize: 12, color: dateColor, fontWeight: isToday ? 500 : 400 }}>
+              <div style={{ fontSize: 12, color: dateColor, fontWeight: isToday ? 500 : 400, position: 'sticky', left: 14, background: bgColor, zIndex: 1 }}>
                 {`${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`}
               </div>
               <div style={{ fontSize: 12, color: row?.clockIn ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockIn || '--'}</div>
               <div style={{ fontSize: 12, color: row?.clockOut ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockOut ? (row.clockIn && row.clockOut < row.clockIn ? `翌${row.clockOut}` : row.clockOut) : '--'}</div>
               <div style={{ fontSize: 12, fontWeight: 500, color: '#222', textAlign: 'right' }}>{row?.workDisplay || '--'}</div>
               <div><StatusBadge status={row?.status} /></div>
+              <div style={{ fontSize: 11, color: row?.clockIn ? '#666' : '#ddd' }}>{row ? breakLabel : '--'}</div>
+              <div style={{ fontSize: 11, color: row?.site1Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site1Id, row.site1Min) : '--'}</div>
+              <div style={{ fontSize: 11, color: row?.site2Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site2Id, row.site2Min) : '--'}</div>
+              <div style={{ fontSize: 11, color: row?.site3Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site3Id, row.site3Min) : '--'}</div>
             </div>
           );
         })}
+        </div>
+        </div>
 
         <div style={{ height: 60 }} />
       </div>
