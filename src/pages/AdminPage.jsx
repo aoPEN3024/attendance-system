@@ -323,9 +323,12 @@ export default function AdminPage() {
           <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 500 }}>{yearMonth.replace('-','年')}月</div>
           <button onClick={() => changeMonth(1)} style={s.monthBtn}>›</button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px', gap: 3, padding: '5px 14px', background: '#f5f5f5', borderBottom: '0.5px solid #eee' }}>
-          {['日付','出勤','退勤','実働','区分'].map(h => <span key={h} style={{ fontSize: 10, color: '#aaa' }}>{h}</span>)}
-        </div>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ minWidth: 820 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 60px 52px 36px 120px 140px 140px 140px', gap: 3, padding: '5px 14px', background: '#f5f5f5', borderBottom: '0.5px solid #eee' }}>
+              <span style={{ fontSize: 10, color: '#aaa', position: 'sticky', left: 14, background: '#f5f5f5', zIndex: 1 }}>日付</span>
+              {['出勤','退勤','実働','区分','操作','休憩','現場1','現場2','現場3'].map(h => <span key={h} style={{ fontSize: 10, color: '#aaa' }}>{h}</span>)}
+            </div>
         {!empData && <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
         {empData && (() => {
           const rowMap = {};
@@ -346,19 +349,41 @@ export default function AdminPage() {
             const dateColor = dow === 0 ? '#E24B4A' : dow === 6 ? '#1855A0' : '#666';
             const dateLabel = `${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`;
             if (!row) return (
-              <div key={date} onClick={() => openEdit({ date, clockIn:'', clockOut:'', breaks:{}, site1Id:'', site1Min:0, site2Id:'', site2Min:0, site3Id:'', site3Min:0, status:'', reason:'', logId: date })} style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px 36px', gap: 3, padding: '9px 14px', borderBottom: '0.5px solid #eee', alignItems: 'center', cursor: 'pointer' }}>
-                <div style={{ fontSize: 12, color: dateColor }}>{dateLabel}</div>
+              <div key={date} onClick={() => openEdit({ date, clockIn:'', clockOut:'', breaks:{}, site1Id:'', site1Min:0, site2Id:'', site2Min:0, site3Id:'', site3Min:0, status:'', reason:'', logId: date })} style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 60px 52px 36px 120px 140px 140px 140px', gap: 3, padding: '9px 14px', borderBottom: '0.5px solid #eee', alignItems: 'center', cursor: 'pointer' }}>
+                <div style={{ fontSize: 12, color: dateColor, position: 'sticky', left: 14, background: 'white', zIndex: 1 }}>{dateLabel}</div>
                 <div style={{ fontSize: 12, color: '#ddd', textAlign: 'right' }}>--</div>
                 <div style={{ fontSize: 12, color: '#ddd', textAlign: 'right' }}>--</div>
                 <div style={{ fontSize: 12, color: '#ddd', textAlign: 'right' }}>--</div>
                 <div></div>
                 <div></div>
+                <div style={{ fontSize: 11, color: '#ddd' }}>--</div>
+                <div style={{ fontSize: 11, color: '#ddd' }}>--</div>
+                <div style={{ fontSize: 11, color: '#ddd' }}>--</div>
+                <div style={{ fontSize: 11, color: '#ddd' }}>--</div>
               </div>
             );
+            // 休憩表示
+            const breakParts = [
+              row.breaks?.am   && 'AM',
+              row.breaks?.noon && '昼',
+              row.breaks?.pm   && 'PM',
+            ].filter(Boolean);
+            const breakMin = (row.breaks?.am ? 15 : 0) + (row.breaks?.noon ? 60 : 0) + (row.breaks?.pm ? 15 : 0);
+            const breakLabel = breakParts.length ? `${breakParts.join('+')} ${breakMin}分` : '--';
+
+            // 現場名表示
+            const siteName = (siteId) => siteOptions.find(s => s.siteId === siteId)?.siteName || '';
+            const siteDisplay = (id, min) => {
+              if (!id) return '--';
+              const name = siteName(id);
+              const days = min ? (min / 450) : 0;
+              return `${name} ${days}日`;
+            };
+
             return (
               <div key={row.logId}>
-                <div style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 1fr 52px 36px', gap: 3, padding: '9px 14px', borderBottom: row.status === 'pending' || row.status === 'leave_pending' ? 'none' : '0.5px solid #eee', alignItems: 'center' }}>
-                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: dateColor, cursor: 'pointer' }}>{dateLabel}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '50px 42px 42px 60px 52px 36px 120px 140px 140px 140px', gap: 3, padding: '9px 14px', borderBottom: row.status === 'pending' || row.status === 'leave_pending' ? 'none' : '0.5px solid #eee', alignItems: 'center' }}>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: dateColor, cursor: 'pointer', position: 'sticky', left: 14, background: 'white', zIndex: 1 }}>{dateLabel}</div>
                   <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: row.clockIn ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockIn || '--'}</div>
                   <div onClick={() => openEdit(row)} style={{ fontSize: 12, color: row.clockOut ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockOut ? (row.clockIn && row.clockOut < row.clockIn ? `翌${row.clockOut}` : row.clockOut) : '--'}</div>
                   <div onClick={() => openEdit(row)} style={{ fontSize: 12, fontWeight: 500, textAlign: 'right', cursor: 'pointer' }}>{row.workDisplay || '--'}</div>
@@ -382,6 +407,10 @@ export default function AdminPage() {
                       </button>
                     )}
                   </div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 11, color: '#666', cursor: 'pointer' }}>{breakLabel}</div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 11, color: row.site1Id ? '#666' : '#ddd', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site1Id, row.site1Min)}</div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 11, color: row.site2Id ? '#666' : '#ddd', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site2Id, row.site2Min)}</div>
+                  <div onClick={() => openEdit(row)} style={{ fontSize: 11, color: row.site3Id ? '#666' : '#ddd', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site3Id, row.site3Min)}</div>
                 </div>
                 {(row.status === 'pending' || row.status === 'leave_pending') && (
                   <div style={{ padding: '6px 14px 10px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
@@ -397,6 +426,8 @@ export default function AdminPage() {
             );
           });
         })()}
+        </div>
+        </div>
         <div style={{ height: 20 }} />
       </div>
     </div>
