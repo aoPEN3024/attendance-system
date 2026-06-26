@@ -101,7 +101,9 @@ export default function MyPage() {
   // 日付ごとのデータをマップ化
   const rowMap = {};
   if (data?.rows) {
-    data.rows.forEach(r => { rowMap[r.date] = r; });
+    data.rows.forEach(r => { 
+      if (!rowMap[r.date]) rowMap[r.date] = r;
+    });
   }
 
   const openEdit = (date, row) => {
