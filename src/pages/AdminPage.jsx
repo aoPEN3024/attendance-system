@@ -87,6 +87,20 @@ export default function AdminPage() {
   const [siteSearch, setSiteSearch] = useState('');
 
   useEffect(() => { loadEmployees(); }, [yearMonth]);
+  // PC版：月が変わったら選択中の社員データも再取得
+  useEffect(() => {
+    if (isPc && selectedEmp) {
+      (async () => {
+        setEmpData(null);
+        try {
+          const result = await api.adminEmployeeMonthly(selectedEmp.employeeId, yearMonth);
+          setEmpData(result);
+        } catch (err) {
+          console.log('社員詳細取得エラー:', err.message);
+        }
+      })();
+    }
+  }, [yearMonth, isPc]);
   useEffect(() => { if (mainTab === 'staff') loadStaff(); }, [mainTab]);
   useEffect(() => { if (mainTab === 'sites') loadSites(); }, [mainTab]);
   useEffect(() => {
@@ -126,7 +140,8 @@ export default function AdminPage() {
 
   const loadEmpDetail = async (emp) => {
     setSelectedEmp(emp);
-    setView('detail');
+    if (!isPc) setView('detail');  // モバイルのみ画面遷移
+    setEmpData(null);              // 読込中は空にする
     try {
       const result = await api.adminEmployeeMonthly(emp.employeeId, yearMonth);
       setEmpData(result);
@@ -279,6 +294,224 @@ export default function AdminPage() {
       </div>
     </div>
   );
+
+// ── PC版：勤怠タブ（2ペインレイアウト） ─────────────────
+  if (isPc && mainTab === 'attendance') {
+    return (
+      <div style={sPc.page}>
+        <div style={sPc.container}>
+          {/* ヘッダー */}
+          <div style={sPc.header}>
+            <div style={sPc.headerTitle}>管理者画面</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 13, color: '#888' }}>{user?.name}</span>
+              <button onClick={logout} style={{ border: 'none', background: 'none', fontSize: 13, color: '#888', cursor: 'pointer' }}>ログアウト</button>
+            </div>
+          </div>
+
+          {/* タブ */}
+          <div style={sPc.tabs}>
+            {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
+              <button key={k} onClick={() => setMainTab(k)} style={{ ...sPc.tab, ...(mainTab === k ? sPc.tabActive : {}) }}>{l}</button>
+            ))}
+          </div>
+
+          {/* 月選択 */}
+          <div style={sPc.monthBar}>
+            <button onClick={() => changeMonth(-1)} style={sPc.monthBtn}>‹</button>
+            <div style={sPc.monthLabel}>{yearMonth.replace('-','年')}月</div>
+            <button onClick={() => changeMonth(1)} style={sPc.monthBtn}>›</button>
+            {totalPending > 0 && (
+              <div style={{ marginLeft: 20, padding: '6px 12px', background: '#FFF4E5', borderRadius: 8, fontSize: 13, color: '#A05A00' }}>
+                未承認 {totalPending} 件
+              </div>
+            )}
+          </div>
+
+          {/* 2ペインレイアウト */}
+          <div style={sPc.twoPane}>
+            {/* 左ペイン：社員一覧 */}
+            <div style={sPc.leftPane}>
+              <div style={sPc.leftHeader}>社員一覧（{employees.length}名）</div>
+              {loading && <div style={{ padding: 20, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
+              {employees.map(emp => (
+                <div key={emp.employeeId}
+                  onClick={() => loadEmpDetail(emp)}
+                  style={{ ...sPc.empItem, background: selectedEmp?.employeeId === emp.employeeId ? '#E6F1FB' : 'white' }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: emp.pendingCount > 0 ? '#FFF4E5' : '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: emp.pendingCount > 0 ? '#A05A00' : '#1855A0', flexShrink: 0 }}>
+                    {emp.name.slice(0,2)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{emp.name}</div>
+                    <div style={{ fontSize: 11, color: emp.pendingCount > 0 ? '#A05A00' : '#888' }}>
+                      {emp.pendingCount > 0 ? `申請 ${emp.pendingCount}件` : `${emp.totalHours}h`}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* CSV出力・締め処理（左ペイン下部） */}
+              <div style={{ padding: 12, borderTop: '0.5px solid #eee', background: '#f9f9f9' }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 6 }}>月次処理</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm(`${yearMonth.replace('-','年')}月を締めますか？`)) return;
+                      try { const result = await api.adminClose(yearMonth); alert(result.message + '\n支払日：' + result.payDate); } catch(err) { alert('エラー：' + err.message); }
+                    }}
+                    style={{ padding: '8px 0', fontSize: 11, fontWeight: 500, background: '#FFF4E5', color: '#A05A00', border: '0.5px solid #F0C97A', borderRadius: 6, cursor: 'pointer' }}
+                  >締める</button>
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm(`${yearMonth.replace('-','年')}月の締めを解除しますか？`)) return;
+                      try { const result = await api.adminOpen(yearMonth); alert(result.message); } catch(err) { alert('エラー：' + err.message); }
+                    }}
+                    style={{ padding: '8px 0', fontSize: 11, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 6, cursor: 'pointer' }}
+                  >解除</button>
+                </div>
+                <button
+                  onClick={() => api.adminExportCsv(yearMonth, 'summary')}
+                  style={{ width: '100%', padding: '8px 0', fontSize: 11, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}
+                >全体集計CSV</button>
+              </div>
+            </div>
+
+            {/* 右ペイン：選択社員の月次詳細 */}
+            <div style={sPc.rightPane}>
+              {!selectedEmp && (
+                <div style={{ padding: 40, textAlign: 'center', color: '#aaa', fontSize: 14 }}>
+                  ← 左から社員を選択してください
+                </div>
+              )}
+              {selectedEmp && (
+                <>
+                  <div style={sPc.rightHeader}>
+                    <div style={{ fontSize: 16, fontWeight: 500, color: '#222' }}>{selectedEmp.name}</div>
+                    <button onClick={() => api.adminExportCsv(yearMonth, 'individual', selectedEmp.employeeId)}
+                      style={{ padding: '6px 12px', fontSize: 12, fontWeight: 500, background: '#E6F1FB', color: '#1855A0', border: '0.5px solid #B5D4F4', borderRadius: 6, cursor: 'pointer' }}>
+                      個人別CSV出力
+                    </button>
+                  </div>
+                  {empData && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '10px 16px', borderBottom: '0.5px solid #eee' }}>
+                      {[
+                        { label: '総労働', value: empData.summary.totalHours + 'h' },
+                        { label: '時間外', value: empData.summary.overtimeHours + 'h', warn: empData.summary.overtimeHours > 0 },
+                        { label: '有給残', value: empData.leaveBalance + '日' },
+                      ].map(({ label, value, warn }) => (
+                        <div key={label} style={{ background: '#f9f9f9', borderRadius: 6, padding: '8px 10px', textAlign: 'center' }}>
+                          <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>{label}</div>
+                          <div style={{ fontSize: 16, fontWeight: 500, color: warn ? '#A05A00' : '#222' }}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {empData && empData.rows.some(r => r.status === 'pending' || r.status === 'leave_pending') && (
+                    <div style={{ padding: '8px 16px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm('全ての申請を一括承認しますか？')) return;
+                          try { const result = await api.adminApproveAll(selectedEmp.employeeId, yearMonth); alert(result.message); await loadEmpDetail(selectedEmp); await loadEmployees(); } catch(err) { alert('エラー：' + err.message); }
+                        }}
+                        style={{ width: '100%', padding: '8px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}
+                      >この月の申請を全て承認する</button>
+                    </div>
+                  )}
+
+                  {/* 日付一覧テーブル（PC版は全部見せる） */}
+                  <div style={{ overflowY: 'auto', flex: 1 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '80px 60px 60px 70px 60px 50px 130px 1fr 1fr 1fr', gap: 4, padding: '6px 16px', background: '#f5f5f5', borderBottom: '0.5px solid #eee', fontSize: 11, color: '#aaa', position: 'sticky', top: 0, zIndex: 1 }}>
+                      <span>日付</span><span>出勤</span><span>退勤</span><span>実働</span><span>区分</span><span>操作</span><span>休憩</span><span>現場1</span><span>現場2</span><span>現場3</span>
+                    </div>
+                    {!empData && <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
+                    {empData && (() => {
+                      const rowMap = {};
+                      empData.rows.forEach(r => { if (!rowMap[r.date]) rowMap[r.date] = r; });
+                      const [y, m] = yearMonth.split('-').map(Number);
+                      const count = new Date(y, m, 0).getDate();
+                      const DOW = ['日','月','火','水','木','金','土'];
+                      const days = [];
+                      for (let i = 1; i <= count; i++) days.push(`${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`);
+
+                      return days.map(date => {
+                        const row = rowMap[date];
+                        const d = new Date(date + 'T00:00:00');
+                        const dow = d.getDay();
+                        const dateColor = dow === 0 ? '#E24B4A' : dow === 6 ? '#1855A0' : '#666';
+                        const dateLabel = `${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`;
+
+                        const breakParts = row ? [row.breaks?.am && 'AM', row.breaks?.noon && '昼', row.breaks?.pm && 'PM'].filter(Boolean) : [];
+                        const breakMin = row ? (row.breaks?.am ? 15 : 0) + (row.breaks?.noon ? 60 : 0) + (row.breaks?.pm ? 15 : 0) : 0;
+                        const breakLabel = breakParts.length ? `${breakParts.join('+')} ${breakMin}分` : '--';
+                        const siteName = (siteId) => siteOptions.find(s => s.siteId === siteId)?.siteName || '';
+                        const siteDisplay = (id, min) => id ? `${siteName(id)} ${min ? min/450 : 0}日` : '--';
+
+                        if (!row) return (
+                          <div key={date} onClick={() => openEdit({ date, clockIn:'', clockOut:'', breaks:{}, site1Id:'', site1Min:0, site2Id:'', site2Min:0, site3Id:'', site3Min:0, status:'', reason:'', logId: date })} style={{ display: 'grid', gridTemplateColumns: '80px 60px 60px 70px 60px 50px 130px 1fr 1fr 1fr', gap: 4, padding: '8px 16px', borderBottom: '0.5px solid #eee', alignItems: 'center', cursor: 'pointer', fontSize: 12 }}>
+                            <div style={{ color: dateColor }}>{dateLabel}</div>
+                            <div style={{ color: '#ddd', textAlign: 'right' }}>--</div>
+                            <div style={{ color: '#ddd', textAlign: 'right' }}>--</div>
+                            <div style={{ color: '#ddd', textAlign: 'right' }}>--</div>
+                            <div></div><div></div>
+                            <div style={{ color: '#ddd' }}>--</div>
+                            <div style={{ color: '#ddd' }}>--</div>
+                            <div style={{ color: '#ddd' }}>--</div>
+                            <div style={{ color: '#ddd' }}>--</div>
+                          </div>
+                        );
+
+                        return (
+                          <div key={row.logId}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '80px 60px 60px 70px 60px 50px 130px 1fr 1fr 1fr', gap: 4, padding: '8px 16px', borderBottom: (row.status === 'pending' || row.status === 'leave_pending') ? 'none' : '0.5px solid #eee', alignItems: 'center', fontSize: 12 }}>
+                              <div onClick={() => openEdit(row)} style={{ color: dateColor, cursor: 'pointer' }}>{dateLabel}</div>
+                              <div onClick={() => openEdit(row)} style={{ color: row.clockIn ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockIn || '--'}</div>
+                              <div onClick={() => openEdit(row)} style={{ color: row.clockOut ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockOut || '--'}</div>
+                              <div onClick={() => openEdit(row)} style={{ fontWeight: 500, textAlign: 'right', cursor: 'pointer' }}>{row.workDisplay || '--'}</div>
+                              <div onClick={() => openEdit(row)} style={{ cursor: 'pointer' }}>{statusBadge(row.status)}</div>
+                              <div>
+                                {(row.status === 'confirmed' || row.status === 'leave' || row.status === 'rejected') && (
+                                  <button onClick={async () => {
+                                    const isRejected = row.status === 'rejected';
+                                    if (!window.confirm(isRejected ? 'この打刻を削除しますか？' : 'この打刻を取り消しますか？')) return;
+                                    try {
+                                      if (isRejected) await api.adminDeleteLog(row.logId);
+                                      else await api.adminApprove(row.logId, 'rejected', '');
+                                      await loadEmpDetail(selectedEmp); await loadEmployees();
+                                    } catch(err) { alert('エラー：' + err.message); }
+                                  }} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '0.5px solid #F09595', background: 'white', color: '#A32D2D', cursor: 'pointer' }}>
+                                    {row.status === 'rejected' ? '削除' : '取消'}
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ color: '#666', fontSize: 11 }}>{breakLabel}</div>
+                              <div style={{ color: row.site1Id ? '#666' : '#ddd', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site1Id, row.site1Min)}</div>
+                              <div style={{ color: row.site2Id ? '#666' : '#ddd', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site2Id, row.site2Min)}</div>
+                              <div style={{ color: row.site3Id ? '#666' : '#ddd', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site3Id, row.site3Min)}</div>
+                            </div>
+                            {(row.status === 'pending' || row.status === 'leave_pending') && (
+                              <div style={{ padding: '6px 16px 10px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
+                                {renderApplyDetail(row)}
+                                {row.reason && <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>{row.reason.replace(/\s*\[申請内容:.*\]/, '').trim()}</div>}
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  <button onClick={() => handleApprove(row.logId, 'approved')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}>承認</button>
+                                  <button onClick={() => handleApprove(row.logId, 'rejected')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 6, cursor: 'pointer' }}>差戻し</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── 社員詳細画面 ──────────────────────────────────────
   if (view === 'detail') return (
@@ -792,223 +1025,7 @@ export default function AdminPage() {
     );
   }
 
-  // ── PC版：勤怠タブ（2ペインレイアウト） ─────────────────
-  if (isPc && mainTab === 'attendance' && view === 'list') {
-    return (
-      <div style={sPc.page}>
-        <div style={sPc.container}>
-          {/* ヘッダー */}
-          <div style={sPc.header}>
-            <div style={sPc.headerTitle}>管理者画面</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 13, color: '#888' }}>{user?.name}</span>
-              <button onClick={logout} style={{ border: 'none', background: 'none', fontSize: 13, color: '#888', cursor: 'pointer' }}>ログアウト</button>
-            </div>
-          </div>
-
-          {/* タブ */}
-          <div style={sPc.tabs}>
-            {[{k:'attendance',l:'勤怠'},{k:'staff',l:'社員'},{k:'sites',l:'現場'}].map(({k,l}) => (
-              <button key={k} onClick={() => setMainTab(k)} style={{ ...sPc.tab, ...(mainTab === k ? sPc.tabActive : {}) }}>{l}</button>
-            ))}
-          </div>
-
-          {/* 月選択 */}
-          <div style={sPc.monthBar}>
-            <button onClick={() => changeMonth(-1)} style={sPc.monthBtn}>‹</button>
-            <div style={sPc.monthLabel}>{yearMonth.replace('-','年')}月</div>
-            <button onClick={() => changeMonth(1)} style={sPc.monthBtn}>›</button>
-            {totalPending > 0 && (
-              <div style={{ marginLeft: 20, padding: '6px 12px', background: '#FFF4E5', borderRadius: 8, fontSize: 13, color: '#A05A00' }}>
-                未承認 {totalPending} 件
-              </div>
-            )}
-          </div>
-
-          {/* 2ペインレイアウト */}
-          <div style={sPc.twoPane}>
-            {/* 左ペイン：社員一覧 */}
-            <div style={sPc.leftPane}>
-              <div style={sPc.leftHeader}>社員一覧（{employees.length}名）</div>
-              {loading && <div style={{ padding: 20, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
-              {employees.map(emp => (
-                <div key={emp.employeeId}
-                  onClick={() => loadEmpDetail(emp)}
-                  style={{ ...sPc.empItem, background: selectedEmp?.employeeId === emp.employeeId ? '#E6F1FB' : 'white' }}
-                >
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: emp.pendingCount > 0 ? '#FFF4E5' : '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: emp.pendingCount > 0 ? '#A05A00' : '#1855A0', flexShrink: 0 }}>
-                    {emp.name.slice(0,2)}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{emp.name}</div>
-                    <div style={{ fontSize: 11, color: emp.pendingCount > 0 ? '#A05A00' : '#888' }}>
-                      {emp.pendingCount > 0 ? `申請 ${emp.pendingCount}件` : `${emp.totalHours}h`}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* CSV出力・締め処理（左ペイン下部） */}
-              <div style={{ padding: 12, borderTop: '0.5px solid #eee', background: '#f9f9f9' }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 6 }}>月次処理</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
-                  <button
-                    onClick={async () => {
-                      if (!window.confirm(`${yearMonth.replace('-','年')}月を締めますか？`)) return;
-                      try { const result = await api.adminClose(yearMonth); alert(result.message + '\n支払日：' + result.payDate); } catch(err) { alert('エラー：' + err.message); }
-                    }}
-                    style={{ padding: '8px 0', fontSize: 11, fontWeight: 500, background: '#FFF4E5', color: '#A05A00', border: '0.5px solid #F0C97A', borderRadius: 6, cursor: 'pointer' }}
-                  >締める</button>
-                  <button
-                    onClick={async () => {
-                      if (!window.confirm(`${yearMonth.replace('-','年')}月の締めを解除しますか？`)) return;
-                      try { const result = await api.adminOpen(yearMonth); alert(result.message); } catch(err) { alert('エラー：' + err.message); }
-                    }}
-                    style={{ padding: '8px 0', fontSize: 11, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 6, cursor: 'pointer' }}
-                  >解除</button>
-                </div>
-                <button
-                  onClick={() => api.adminExportCsv(yearMonth, 'summary')}
-                  style={{ width: '100%', padding: '8px 0', fontSize: 11, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}
-                >全体集計CSV</button>
-              </div>
-            </div>
-
-            {/* 右ペイン：選択社員の月次詳細 */}
-            <div style={sPc.rightPane}>
-              {!selectedEmp && (
-                <div style={{ padding: 40, textAlign: 'center', color: '#aaa', fontSize: 14 }}>
-                  ← 左から社員を選択してください
-                </div>
-              )}
-              {selectedEmp && (
-                <>
-                  <div style={sPc.rightHeader}>
-                    <div style={{ fontSize: 16, fontWeight: 500, color: '#222' }}>{selectedEmp.name}</div>
-                    <button onClick={() => api.adminExportCsv(yearMonth, 'individual', selectedEmp.employeeId)}
-                      style={{ padding: '6px 12px', fontSize: 12, fontWeight: 500, background: '#E6F1FB', color: '#1855A0', border: '0.5px solid #B5D4F4', borderRadius: 6, cursor: 'pointer' }}>
-                      個人別CSV出力
-                    </button>
-                  </div>
-                  {empData && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '10px 16px', borderBottom: '0.5px solid #eee' }}>
-                      {[
-                        { label: '総労働', value: empData.summary.totalHours + 'h' },
-                        { label: '時間外', value: empData.summary.overtimeHours + 'h', warn: empData.summary.overtimeHours > 0 },
-                        { label: '有給残', value: empData.leaveBalance + '日' },
-                      ].map(({ label, value, warn }) => (
-                        <div key={label} style={{ background: '#f9f9f9', borderRadius: 6, padding: '8px 10px', textAlign: 'center' }}>
-                          <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>{label}</div>
-                          <div style={{ fontSize: 16, fontWeight: 500, color: warn ? '#A05A00' : '#222' }}>{value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {empData && empData.rows.some(r => r.status === 'pending' || r.status === 'leave_pending') && (
-                    <div style={{ padding: '8px 16px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
-                      <button
-                        onClick={async () => {
-                          if (!window.confirm('全ての申請を一括承認しますか？')) return;
-                          try { const result = await api.adminApproveAll(selectedEmp.employeeId, yearMonth); alert(result.message); await loadEmpDetail(selectedEmp); await loadEmployees(); } catch(err) { alert('エラー：' + err.message); }
-                        }}
-                        style={{ width: '100%', padding: '8px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}
-                      >この月の申請を全て承認する</button>
-                    </div>
-                  )}
-
-                  {/* 日付一覧テーブル（PC版は全部見せる） */}
-                  <div style={{ overflowY: 'auto', flex: 1 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '80px 60px 60px 70px 60px 50px 130px 1fr 1fr 1fr', gap: 4, padding: '6px 16px', background: '#f5f5f5', borderBottom: '0.5px solid #eee', fontSize: 11, color: '#aaa', position: 'sticky', top: 0, zIndex: 1 }}>
-                      <span>日付</span><span>出勤</span><span>退勤</span><span>実働</span><span>区分</span><span>操作</span><span>休憩</span><span>現場1</span><span>現場2</span><span>現場3</span>
-                    </div>
-                    {!empData && <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 13 }}>読み込み中...</div>}
-                    {empData && (() => {
-                      const rowMap = {};
-                      empData.rows.forEach(r => { if (!rowMap[r.date]) rowMap[r.date] = r; });
-                      const [y, m] = yearMonth.split('-').map(Number);
-                      const count = new Date(y, m, 0).getDate();
-                      const DOW = ['日','月','火','水','木','金','土'];
-                      const days = [];
-                      for (let i = 1; i <= count; i++) days.push(`${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`);
-
-                      return days.map(date => {
-                        const row = rowMap[date];
-                        const d = new Date(date + 'T00:00:00');
-                        const dow = d.getDay();
-                        const dateColor = dow === 0 ? '#E24B4A' : dow === 6 ? '#1855A0' : '#666';
-                        const dateLabel = `${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`;
-
-                        const breakParts = row ? [row.breaks?.am && 'AM', row.breaks?.noon && '昼', row.breaks?.pm && 'PM'].filter(Boolean) : [];
-                        const breakMin = row ? (row.breaks?.am ? 15 : 0) + (row.breaks?.noon ? 60 : 0) + (row.breaks?.pm ? 15 : 0) : 0;
-                        const breakLabel = breakParts.length ? `${breakParts.join('+')} ${breakMin}分` : '--';
-                        const siteName = (siteId) => siteOptions.find(s => s.siteId === siteId)?.siteName || '';
-                        const siteDisplay = (id, min) => id ? `${siteName(id)} ${min ? min/450 : 0}日` : '--';
-
-                        if (!row) return (
-                          <div key={date} onClick={() => openEdit({ date, clockIn:'', clockOut:'', breaks:{}, site1Id:'', site1Min:0, site2Id:'', site2Min:0, site3Id:'', site3Min:0, status:'', reason:'', logId: date })} style={{ display: 'grid', gridTemplateColumns: '80px 60px 60px 70px 60px 50px 130px 1fr 1fr 1fr', gap: 4, padding: '8px 16px', borderBottom: '0.5px solid #eee', alignItems: 'center', cursor: 'pointer', fontSize: 12 }}>
-                            <div style={{ color: dateColor }}>{dateLabel}</div>
-                            <div style={{ color: '#ddd', textAlign: 'right' }}>--</div>
-                            <div style={{ color: '#ddd', textAlign: 'right' }}>--</div>
-                            <div style={{ color: '#ddd', textAlign: 'right' }}>--</div>
-                            <div></div><div></div>
-                            <div style={{ color: '#ddd' }}>--</div>
-                            <div style={{ color: '#ddd' }}>--</div>
-                            <div style={{ color: '#ddd' }}>--</div>
-                            <div style={{ color: '#ddd' }}>--</div>
-                          </div>
-                        );
-
-                        return (
-                          <div key={row.logId}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '80px 60px 60px 70px 60px 50px 130px 1fr 1fr 1fr', gap: 4, padding: '8px 16px', borderBottom: (row.status === 'pending' || row.status === 'leave_pending') ? 'none' : '0.5px solid #eee', alignItems: 'center', fontSize: 12 }}>
-                              <div onClick={() => openEdit(row)} style={{ color: dateColor, cursor: 'pointer' }}>{dateLabel}</div>
-                              <div onClick={() => openEdit(row)} style={{ color: row.clockIn ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockIn || '--'}</div>
-                              <div onClick={() => openEdit(row)} style={{ color: row.clockOut ? '#222' : '#ccc', textAlign: 'right', cursor: 'pointer' }}>{row.clockOut || '--'}</div>
-                              <div onClick={() => openEdit(row)} style={{ fontWeight: 500, textAlign: 'right', cursor: 'pointer' }}>{row.workDisplay || '--'}</div>
-                              <div onClick={() => openEdit(row)} style={{ cursor: 'pointer' }}>{statusBadge(row.status)}</div>
-                              <div>
-                                {(row.status === 'confirmed' || row.status === 'leave' || row.status === 'rejected') && (
-                                  <button onClick={async () => {
-                                    const isRejected = row.status === 'rejected';
-                                    if (!window.confirm(isRejected ? 'この打刻を削除しますか？' : 'この打刻を取り消しますか？')) return;
-                                    try {
-                                      if (isRejected) await api.adminDeleteLog(row.logId);
-                                      else await api.adminApprove(row.logId, 'rejected', '');
-                                      await loadEmpDetail(selectedEmp); await loadEmployees();
-                                    } catch(err) { alert('エラー：' + err.message); }
-                                  }} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '0.5px solid #F09595', background: 'white', color: '#A32D2D', cursor: 'pointer' }}>
-                                    {row.status === 'rejected' ? '削除' : '取消'}
-                                  </button>
-                                )}
-                              </div>
-                              <div style={{ color: '#666', fontSize: 11 }}>{breakLabel}</div>
-                              <div style={{ color: row.site1Id ? '#666' : '#ddd', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site1Id, row.site1Min)}</div>
-                              <div style={{ color: row.site2Id ? '#666' : '#ddd', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site2Id, row.site2Min)}</div>
-                              <div style={{ color: row.site3Id ? '#666' : '#ddd', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{siteDisplay(row.site3Id, row.site3Min)}</div>
-                            </div>
-                            {(row.status === 'pending' || row.status === 'leave_pending') && (
-                              <div style={{ padding: '6px 16px 10px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
-                                {renderApplyDetail(row)}
-                                {row.reason && <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>{row.reason.replace(/\s*\[申請内容:.*\]/, '').trim()}</div>}
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                  <button onClick={() => handleApprove(row.logId, 'approved')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#E6F7EE', color: '#1A7A4A', border: '0.5px solid #7DC4A0', borderRadius: 6, cursor: 'pointer' }}>承認</button>
-                                  <button onClick={() => handleApprove(row.logId, 'rejected')} style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 500, background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595', borderRadius: 6, cursor: 'pointer' }}>差戻し</button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  
 
   // ── 勤怠管理一覧画面 ──────────────────────────────────
   return (
