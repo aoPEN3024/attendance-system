@@ -372,29 +372,79 @@ export default function MyPage() {
             return `${name} ${days}日`;
           };
 
+          // 申請内容の解析（申請中の場合）
+          const applyMatch = row?.reason && row.reason.match(/\[申請内容:(.*)\]/);
+          let applyDetail = null;
+          if (applyMatch && (row.status === 'pending' || row.status === 'leave_pending')) {
+            try {
+              const a = JSON.parse(applyMatch[1]);
+              const fmtBrk = (am, noon, pm) => {
+                const parts = [am && 'AM', noon && '昼', pm && 'PM'].filter(Boolean);
+                const min = (am?15:0) + (noon?60:0) + (pm?15:0);
+                return parts.length ? `${parts.join('+')} ${min}分` : 'なし';
+              };
+              const fmtSts = (s1id, s1m, s2id, s2m, s3id, s3m) => {
+                const parts = [];
+                if (s1id) parts.push(`${siteName(s1id)} ${Number(s1m)/450}日`);
+                if (s2id) parts.push(`${siteName(s2id)} ${Number(s2m)/450}日`);
+                if (s3id) parts.push(`${siteName(s3id)} ${Number(s3m)/450}日`);
+                return parts.length ? parts.join(' / ') : 'なし';
+              };
+              applyDetail = {
+                beforeTime: (row.clockIn || row.clockOut) ? `${row.clockIn || '--'}〜${row.clockOut || '--'}` : '打刻なし',
+                beforeBreak: fmtBrk(row.breaks?.am, row.breaks?.noon, row.breaks?.pm),
+                beforeSites: fmtSts(row.site1Id, row.site1Min, row.site2Id, row.site2Min, row.site3Id, row.site3Min),
+                afterTime: (a.clockIn || a.clockOut) ? `${a.clockIn || '--'}〜${a.clockOut || '--'}` : '打刻なし',
+                afterBreak: fmtBrk(a.breakAm === 'true', a.breakNoon === 'true', a.breakPm === 'true'),
+                afterSites: fmtSts(a.site1Id, a.site1Min, a.site2Id, a.site2Min, a.site3Id, a.site3Min),
+              };
+            } catch(e) {}
+          }
+
           return (
-            <div
-              key={date}
-              onClick={() => openEdit(date, row || null)}
-              style={{
-                display: 'grid', gridTemplateColumns: '52px 46px 46px 60px 42px 120px 140px 140px 140px',
-                gap: 3, padding: '8px 14px',
-                borderBottom: '0.5px solid #eee',
-                alignItems: 'center', cursor: 'pointer',
-                background: bgColor,
-              }}
-            >
-              <div style={{ fontSize: 12, color: dateColor, fontWeight: isToday ? 500 : 400, position: 'sticky', left: 14, background: bgColor, zIndex: 1 }}>
-                {`${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`}
+            <div key={date}>
+              <div
+                onClick={() => openEdit(date, row || null)}
+                style={{
+                  display: 'grid', gridTemplateColumns: '52px 46px 46px 60px 42px 120px 140px 140px 140px',
+                  gap: 3, padding: '8px 14px',
+                  borderBottom: applyDetail ? 'none' : '0.5px solid #eee',
+                  alignItems: 'center', cursor: 'pointer',
+                  background: bgColor,
+                }}
+              >
+                <div style={{ fontSize: 12, color: dateColor, fontWeight: isToday ? 500 : 400, position: 'sticky', left: 14, background: bgColor, zIndex: 1 }}>
+                  {`${date.slice(5,7).replace(/^0/,'')}/${date.slice(8,10).replace(/^0/,'')}（${DOW[dow]}）`}
+                </div>
+                <div style={{ fontSize: 12, color: row?.clockIn ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockIn || '--'}</div>
+                <div style={{ fontSize: 12, color: row?.clockOut ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockOut ? (row.clockIn && row.clockOut < row.clockIn ? `翌${row.clockOut}` : row.clockOut) : '--'}</div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: '#222', textAlign: 'right' }}>{row?.workDisplay || '--'}</div>
+                <div><StatusBadge status={row?.status} /></div>
+                <div style={{ fontSize: 11, color: row?.clockIn ? '#666' : '#ddd' }}>{row ? breakLabel : '--'}</div>
+                <div style={{ fontSize: 11, color: row?.site1Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site1Id, row.site1Min) : '--'}</div>
+                <div style={{ fontSize: 11, color: row?.site2Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site2Id, row.site2Min) : '--'}</div>
+                <div style={{ fontSize: 11, color: row?.site3Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site3Id, row.site3Min) : '--'}</div>
               </div>
-              <div style={{ fontSize: 12, color: row?.clockIn ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockIn || '--'}</div>
-              <div style={{ fontSize: 12, color: row?.clockOut ? '#222' : '#ddd', textAlign: 'right' }}>{row?.clockOut ? (row.clockIn && row.clockOut < row.clockIn ? `翌${row.clockOut}` : row.clockOut) : '--'}</div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#222', textAlign: 'right' }}>{row?.workDisplay || '--'}</div>
-              <div><StatusBadge status={row?.status} /></div>
-              <div style={{ fontSize: 11, color: row?.clockIn ? '#666' : '#ddd' }}>{row ? breakLabel : '--'}</div>
-              <div style={{ fontSize: 11, color: row?.site1Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site1Id, row.site1Min) : '--'}</div>
-              <div style={{ fontSize: 11, color: row?.site2Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site2Id, row.site2Min) : '--'}</div>
-              <div style={{ fontSize: 11, color: row?.site3Id ? '#666' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row ? siteDisplay(row.site3Id, row.site3Min) : '--'}</div>
+              {applyDetail && (
+                <div style={{ padding: '6px 14px 10px', borderBottom: '0.5px solid #eee', background: '#fffaf5' }}>
+                  <div style={{ fontSize: 11, background: '#f5f5f5', borderRadius: 6, padding: '8px 10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 8px', alignItems: 'start' }}>
+                      <div style={{ color: '#aaa' }}>【申請前】</div>
+                      <div style={{ color: '#888' }}>
+                        <div>{applyDetail.beforeTime}</div>
+                        <div>休憩: {applyDetail.beforeBreak}</div>
+                        <div>現場: {applyDetail.beforeSites}</div>
+                      </div>
+                      <div style={{ color: '#A05A00', fontWeight: 500, marginTop: 6 }}>【申請後】</div>
+                      <div style={{ color: '#222', marginTop: 6 }}>
+                        <div>{applyDetail.afterTime}</div>
+                        <div>休憩: {applyDetail.afterBreak}</div>
+                        <div>現場: {applyDetail.afterSites}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

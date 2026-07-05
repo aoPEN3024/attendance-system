@@ -205,20 +205,62 @@ export default function AdminPage() {
     }
   };
 
-  const renderApplyDetail = (row) => {
+ const renderApplyDetail = (row) => {
     if (row.status === 'leave_pending') {
       return <div style={{ fontSize: 12, color: '#1855A0', background: '#E6F1FB', borderRadius: 6, padding: '6px 10px', marginBottom: 6 }}>有給申請</div>;
     }
     const match = row.reason && row.reason.match(/\[申請内容:(.*)\]/);
     if (!match) return null;
+
+    // 表示ヘルパー
+    const siteName = (id) => siteOptions.find(s => s.siteId === id)?.siteName || '';
+    const fmtSites = (s1id, s1m, s2id, s2m, s3id, s3m) => {
+      const parts = [];
+      if (s1id) parts.push(`${siteName(s1id)} ${Number(s1m)/450}日`);
+      if (s2id) parts.push(`${siteName(s2id)} ${Number(s2m)/450}日`);
+      if (s3id) parts.push(`${siteName(s3id)} ${Number(s3m)/450}日`);
+      return parts.length ? parts.join(' / ') : 'なし';
+    };
+    const fmtBreak = (am, noon, pm) => {
+      const parts = [am && 'AM', noon && '昼', pm && 'PM'].filter(Boolean);
+      const min = (am?15:0) + (noon?60:0) + (pm?15:0);
+      return parts.length ? `${parts.join('+')} ${min}分` : 'なし';
+    };
+    const fmtTime = (clockIn, clockOut) => {
+      if (!clockIn && !clockOut) return '打刻なし';
+      return `${clockIn || '--'}〜${clockOut || '--'}`;
+    };
+
     try {
       const a = JSON.parse(match[1]);
+
+      // 申請前（既存の row のデータ）
+      const beforeTime = fmtTime(row.clockIn, row.clockOut);
+      const beforeBreak = fmtBreak(row.breaks?.am, row.breaks?.noon, row.breaks?.pm);
+      const beforeSites = fmtSites(row.site1Id, row.site1Min, row.site2Id, row.site2Min, row.site3Id, row.site3Min);
+
+      // 申請後
+      const afterTime = fmtTime(a.clockIn, a.clockOut);
+      const afterBreak = fmtBreak(a.breakAm === 'true', a.breakNoon === 'true', a.breakPm === 'true');
+      const afterSites = fmtSites(a.site1Id, a.site1Min, a.site2Id, a.site2Min, a.site3Id, a.site3Min);
+      const afterWork = a.workMinutes ? `${Math.floor(a.workMinutes/60)}h${a.workMinutes%60>0?a.workMinutes%60+'m':''}` : '--';
+
       return (
-        <div style={{ fontSize: 12, color: '#666', background: '#f5f5f5', borderRadius: 6, padding: '6px 10px', marginBottom: 6 }}>
-          <span style={{ color: '#888' }}>申請内容：</span>
-          {a.clockIn}〜{a.clockOut}　
-          休憩：{[a.breakAm==='true'&&'AM', a.breakNoon==='true'&&'昼', a.breakPm==='true'&&'PM'].filter(Boolean).join('+')||'なし'}　
-          実働：{Math.floor(a.workMinutes/60)}h{a.workMinutes%60>0?a.workMinutes%60+'m':''}
+        <div style={{ fontSize: 12, background: '#f5f5f5', borderRadius: 6, padding: '8px 10px', marginBottom: 6 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 8px', alignItems: 'start' }}>
+            <div style={{ color: '#aaa' }}>【申請前】</div>
+            <div style={{ color: '#888' }}>
+              <div>{beforeTime}</div>
+              <div>休憩: {beforeBreak}</div>
+              <div>現場: {beforeSites}</div>
+            </div>
+            <div style={{ color: '#A05A00', fontWeight: 500 }}>【申請後】</div>
+            <div style={{ color: '#222' }}>
+              <div>{afterTime}（実働 {afterWork}）</div>
+              <div>休憩: {afterBreak}</div>
+              <div>現場: {afterSites}</div>
+            </div>
+          </div>
         </div>
       );
     } catch(e) { return null; }
