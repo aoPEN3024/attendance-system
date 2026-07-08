@@ -213,10 +213,11 @@ export default function AdminPage() {
     // 表示ヘルパー
     const siteName = (id) => siteOptions.find(s => s.siteId === id)?.siteName || '';
     const fmtSites = (s1id, s1m, s2id, s2m, s3id, s3m) => {
+      const toDays = (m) => Math.round((Number(m) / 450) * 100) / 100;
       const parts = [];
-      if (s1id) parts.push(`${siteName(s1id)} ${Number(s1m)/450}日`);
-      if (s2id) parts.push(`${siteName(s2id)} ${Number(s2m)/450}日`);
-      if (s3id) parts.push(`${siteName(s3id)} ${Number(s3m)/450}日`);
+      if (s1id) parts.push(`${siteName(s1id)} ${toDays(s1m)}日`);
+      if (s2id) parts.push(`${siteName(s2id)} ${toDays(s2m)}日`);
+      if (s3id) parts.push(`${siteName(s3id)} ${toDays(s3m)}日`);
       return parts.length ? parts.join(' / ') : 'なし';
     };
     const fmtBreak = (am, noon, pm) => {
