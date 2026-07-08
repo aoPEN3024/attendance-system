@@ -512,7 +512,7 @@ export default function AdminPage() {
                         const breakMin = row ? (row.breaks?.am ? 15 : 0) + (row.breaks?.noon ? 60 : 0) + (row.breaks?.pm ? 15 : 0) : 0;
                         const breakLabel = breakParts.length ? `${breakParts.join('+')} ${breakMin}分` : '--';
                         const siteName = (siteId) => siteOptions.find(s => s.siteId === siteId)?.siteName || '';
-                        const siteDisplay = (id, min) => id ? `${siteName(id)} ${min ? min/450 : 0}日` : '--';
+                        const siteDisplay = (id, min) => id ? `${siteName(id)} ${min ? Math.round((min/450) * 100) / 100 : 0}日` : '--';
 
                         if (!row) return (
                           <div key={date} onClick={() => openEdit({ date, clockIn:'', clockOut:'', breaks:{}, site1Id:'', site1Min:0, site2Id:'', site2Min:0, site3Id:'', site3Min:0, status:'', reason:'', logId: date })} style={{ display: 'grid', gridTemplateColumns: '80px 60px 60px 70px 60px 50px 130px 1fr 1fr 1fr', gap: 4, padding: '8px 16px', borderBottom: '0.5px solid #eee', alignItems: 'center', cursor: 'pointer', fontSize: 12 }}>
