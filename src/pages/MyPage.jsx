@@ -368,7 +368,7 @@ export default function MyPage() {
           const siteDisplay = (id, min) => {
             if (!id) return '--';
             const name = siteName(id);
-            const days = min ? (min / 450) : 0;
+            const days = min ? Math.round((min / 450) * 100) / 100 : 0;
             return `${name} ${days}日`;
           };
 

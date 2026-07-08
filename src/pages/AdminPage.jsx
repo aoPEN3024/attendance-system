@@ -209,8 +209,6 @@ export default function AdminPage() {
     if (row.status === 'leave_pending') {
       return <div style={{ fontSize: 12, color: '#1855A0', background: '#E6F1FB', borderRadius: 6, padding: '6px 10px', marginBottom: 6 }}>有給申請</div>;
     }
-    const match = row.reason && row.reason.match(/\[申請内容:(.*)\]/);
-    if (!match) return null;
 
     // 表示ヘルパー
     const siteName = (id) => siteOptions.find(s => s.siteId === id)?.siteName || '';
@@ -231,29 +229,53 @@ export default function AdminPage() {
       return `${clockIn || '--'}〜${clockOut || '--'}`;
     };
 
-    try {
-      const a = JSON.parse(match[1]);
+    const match = row.reason && row.reason.match(/\[申請内容:(.*)\]/);
 
-      // 申請前（既存の row のデータ）
-      const beforeTime = fmtTime(row.clockIn, row.clockOut);
-      const beforeBreak = fmtBreak(row.breaks?.am, row.breaks?.noon, row.breaks?.pm);
-      const beforeSites = fmtSites(row.site1Id, row.site1Min, row.site2Id, row.site2Min, row.site3Id, row.site3Min);
+    // パターン1: 既存の打刻を修正した申請（reasonに[申請内容:{...}]あり）
+    if (match) {
+      try {
+        const a = JSON.parse(match[1]);
+        const beforeTime = fmtTime(row.clockIn, row.clockOut);
+        const beforeBreak = fmtBreak(row.breaks?.am, row.breaks?.noon, row.breaks?.pm);
+        const beforeSites = fmtSites(row.site1Id, row.site1Min, row.site2Id, row.site2Min, row.site3Id, row.site3Min);
+        const afterTime = fmtTime(a.clockIn, a.clockOut);
+        const afterBreak = fmtBreak(a.breakAm === 'true', a.breakNoon === 'true', a.breakPm === 'true');
+        const afterSites = fmtSites(a.site1Id, a.site1Min, a.site2Id, a.site2Min, a.site3Id, a.site3Min);
+        const afterWork = a.workMinutes ? `${Math.floor(a.workMinutes/60)}h${a.workMinutes%60>0?a.workMinutes%60+'m':''}` : '--';
 
-      // 申請後
-      const afterTime = fmtTime(a.clockIn, a.clockOut);
-      const afterBreak = fmtBreak(a.breakAm === 'true', a.breakNoon === 'true', a.breakPm === 'true');
-      const afterSites = fmtSites(a.site1Id, a.site1Min, a.site2Id, a.site2Min, a.site3Id, a.site3Min);
-      const afterWork = a.workMinutes ? `${Math.floor(a.workMinutes/60)}h${a.workMinutes%60>0?a.workMinutes%60+'m':''}` : '--';
+        return (
+          <div style={{ fontSize: 12, background: '#f5f5f5', borderRadius: 6, padding: '8px 10px', marginBottom: 6 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 8px', alignItems: 'start' }}>
+              <div style={{ color: '#aaa' }}>【申請前】</div>
+              <div style={{ color: '#888' }}>
+                <div>{beforeTime}</div>
+                <div>休憩: {beforeBreak}</div>
+                <div>現場: {beforeSites}</div>
+              </div>
+              <div style={{ color: '#A05A00', fontWeight: 500 }}>【申請後】</div>
+              <div style={{ color: '#222' }}>
+                <div>{afterTime}（実働 {afterWork}）</div>
+                <div>休憩: {afterBreak}</div>
+                <div>現場: {afterSites}</div>
+              </div>
+            </div>
+          </div>
+        );
+      } catch(e) { return null; }
+    }
+
+    // パターン2: 打刻忘れなど新規申請（rowの各列に申請内容が直接入っている）
+    if (row.status === 'pending') {
+      const afterTime = fmtTime(row.clockIn, row.clockOut);
+      const afterBreak = fmtBreak(row.breaks?.am, row.breaks?.noon, row.breaks?.pm);
+      const afterSites = fmtSites(row.site1Id, row.site1Min, row.site2Id, row.site2Min, row.site3Id, row.site3Min);
+      const afterWork = row.workMinutes ? `${Math.floor(row.workMinutes/60)}h${row.workMinutes%60>0?row.workMinutes%60+'m':''}` : '--';
 
       return (
         <div style={{ fontSize: 12, background: '#f5f5f5', borderRadius: 6, padding: '8px 10px', marginBottom: 6 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 8px', alignItems: 'start' }}>
             <div style={{ color: '#aaa' }}>【申請前】</div>
-            <div style={{ color: '#888' }}>
-              <div>{beforeTime}</div>
-              <div>休憩: {beforeBreak}</div>
-              <div>現場: {beforeSites}</div>
-            </div>
+            <div style={{ color: '#888' }}>打刻なし（新規申請）</div>
             <div style={{ color: '#A05A00', fontWeight: 500 }}>【申請後】</div>
             <div style={{ color: '#222' }}>
               <div>{afterTime}（実働 {afterWork}）</div>
@@ -263,7 +285,9 @@ export default function AdminPage() {
           </div>
         </div>
       );
-    } catch(e) { return null; }
+    }
+
+    return null;
   };
 
   const sortedSites = [
@@ -663,7 +687,7 @@ export default function AdminPage() {
             const siteDisplay = (id, min) => {
               if (!id) return '--';
               const name = siteName(id);
-              const days = min ? (min / 450) : 0;
+              const days = min ? Math.round((min / 450) * 100) / 100 : 0;
               return `${name} ${days}日`;
             };
 
