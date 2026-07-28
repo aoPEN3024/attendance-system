@@ -221,11 +221,10 @@ export default function PunchPage() {
           {sites.map((site, index) => (
             <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6, marginBottom: 8 }}>
               <div style={s.selectWrap}>
-                <i className="ti ti-building" style={{ fontSize: 13, color: '#888', marginRight: 6 }} />
                 <select
                   value={site.siteId}
                   onChange={e => updateSite(index, 'siteId', e.target.value)}
-                  style={{ flex: 1, border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none' }}
+                  style={{ flex: 1, minWidth: 0, border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', textOverflow: 'ellipsis' }}
                 >
                   <option value="">現場{index + 1}を選択</option>
                   {siteOptions.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
@@ -336,7 +335,7 @@ const styles = {
   divider:        { height: '0.5px', background: '#eee', margin: '12px 16px 0' },
   section:        { padding: '12px 16px' },
   sectionLabel:   { fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 6 },
-  selectWrap:     { border: '0.5px solid #eee', borderRadius: 8, padding: '9px 10px', background: '#f9f9f9', display: 'flex', alignItems: 'center' },
+  selectWrap:     { border: '0.5px solid #eee', borderRadius: 8, padding: '9px 10px', background: '#f9f9f9', display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' },
   breakGrid:      { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 4 },
   breakBtn:       { border: '0.5px solid', borderRadius: 8, padding: '10px 4px 8px', textAlign: 'center', cursor: 'pointer', position: 'relative' },
   breakSummary:   { fontSize: 12, color: '#888', textAlign: 'center', minHeight: 18 },
