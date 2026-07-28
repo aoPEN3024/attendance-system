@@ -218,9 +218,13 @@ export default function PunchPage() {
 
           {/* 現場選択（3つ） */}
           <div style={s.sectionLabel}>現場・滞在時間</div>
+          
+          <div style={{ fontSize: 11, color: '#888', textAlign: 'right', marginBottom: 12 }}>
+            合計: <strong>{sites.reduce((sum, s) => sum + (Number(s.days) || 0), 0)}日</strong>
+          </div>
           {sites.map((site, index) => (
-            <div key={index} style={{ display: 'grid', gridTemplateColumns: 'calc(100% - 96px) 90px', gap: 6, marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
-              <div style={s.selectWrap}>
+            <div key={index} style={{ marginBottom: 10 }}>
+              <div style={{ ...s.selectWrap, marginBottom: 4 }}>
                 <select
                   value={site.siteId}
                   onChange={e => updateSite(index, 'siteId', e.target.value)}
@@ -241,10 +245,6 @@ export default function PunchPage() {
               </div>
             </div>
           ))}
-          <div style={{ fontSize: 11, color: '#888', textAlign: 'right', marginBottom: 12 }}>
-            合計: <strong>{sites.reduce((sum, s) => sum + (Number(s.days) || 0), 0)}日</strong>
-          </div>
-
           {/* 振替出勤 */}
           <div style={s.sectionLabel}>振替出勤</div>
           <div style={{ marginBottom: 12 }}>
