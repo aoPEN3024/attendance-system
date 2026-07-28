@@ -219,7 +219,7 @@ export default function PunchPage() {
           {/* 現場選択（3つ） */}
           <div style={s.sectionLabel}>現場・滞在時間</div>
           {sites.map((site, index) => (
-            <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 90px', gap: 6, marginBottom: 8 }}>
+            <div key={index} style={{ display: 'grid', gridTemplateColumns: 'calc(100% - 96px) 90px', gap: 6, marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
               <div style={s.selectWrap}>
                 <select
                   value={site.siteId}
