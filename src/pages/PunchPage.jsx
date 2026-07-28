@@ -333,7 +333,7 @@ const styles = {
   punchRow:       { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '12px 16px 4px' },
   punchBtn:       { borderRadius: 10, padding: '15px 0', textAlign: 'center', fontSize: 15, fontWeight: 500, cursor: 'pointer' },
   divider:        { height: '0.5px', background: '#eee', margin: '12px 16px 0' },
-  section:        { padding: '12px 16px' },
+  section:        { padding: '12px 16px', overflow: 'hidden' },
   sectionLabel:   { fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 6 },
   selectWrap:     { border: '0.5px solid #eee', borderRadius: 8, padding: '9px 10px', background: '#f9f9f9', display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' },
   breakGrid:      { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 4 },
