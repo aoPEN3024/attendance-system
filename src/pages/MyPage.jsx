@@ -211,7 +211,7 @@ export default function MyPage() {
         <div style={{ padding: '12px 16px' }}>
           <div style={s.flabel}>現場・滞在時間</div>
           {editSites.map((site, index) => (
-            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6, marginBottom: 6, opacity: (holMode || subMode === 'holiday') ? 0.35 : 1, pointerEvents: (holMode || subMode === 'holiday') ? 'none' : 'auto' }}>
+            <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 90px', gap: 6, marginBottom: 6, opacity: (holMode || subMode === 'holiday') ? 0.35 : 1, pointerEvents: (holMode || subMode === 'holiday') ? 'none' : 'auto' }}>
               <div style={{ border: '0.5px solid #ddd', borderRadius: 8, padding: '8px 10px', background: 'white', display: 'flex', alignItems: 'center' }}>
                 <select
                   value={site.siteId}
