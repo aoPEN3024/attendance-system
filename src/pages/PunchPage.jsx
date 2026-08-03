@@ -106,42 +106,33 @@ export default function PunchPage() {
     }
   };
 
-  const updateSite = async (index, field, value) => {
-    const newSites = sites.map((s, i) => i === index ? { ...s, [field]: value } : s);
-    setSites(newSites);
-    if (todayData?.clockIn) {
-      try {
-        const sitesForApi = newSites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
-        await api.punch('updateSites', today(), nowTime(), sitesForApi, {});
-      } catch (err) {
-        console.log('現場更新エラー:', err.message);
-      }
-    }
-  };
-  const saveRemark = async () => {
-    if (!todayData?.clockIn) return;
-    try {
-      await api.updateRemark(today(), remark);
-    } catch (err) {
-      console.log('備考更新エラー:', err.message);
-    }
+  const updateSite = (index, field, value) => {
+    setSites(sites.map((s, i) => i === index ? { ...s, [field]: value } : s));
   };
 
-  const toggleBreak = async (key) => {
-    const newBreaks = { ...breaks, [key]: !breaks[key] };
-    setBreaks(newBreaks);
-    if (todayData?.clockIn) {
-      try {
-        const sitesForApi = sites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
-        await api.punch('updateBreak', today(), nowTime(), sitesForApi, {
-          breakAm:   newBreaks.breakAm   ? 'true' : 'false',
-          breakNoon: newBreaks.breakNoon ? 'true' : 'false',
-          breakPm:   newBreaks.breakPm   ? 'true' : 'false',
-        });
-        await loadTodayData();
-      } catch (err) {
-        console.log('休憩更新エラー:', err.message);
-      }
+  const toggleBreak = (key) => {
+    setBreaks({ ...breaks, [key]: !breaks[key] });
+  };
+
+  const saveAll = async () => {
+    if (!todayData?.clockIn) { setMessage('先に出勤打刻をしてください'); return; }
+    setLoading(true);
+    setMessage('');
+    try {
+      const sitesForApi = sites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
+      await api.punch('updateSites', today(), nowTime(), sitesForApi, {});
+      await api.punch('updateBreak', today(), nowTime(), sitesForApi, {
+        breakAm:   breaks.breakAm   ? 'true' : 'false',
+        breakNoon: breaks.breakNoon ? 'true' : 'false',
+        breakPm:   breaks.breakPm   ? 'true' : 'false',
+      });
+      await api.updateRemark(today(), remark);
+      await loadTodayData();
+      setMessage('登録しました');
+    } catch (err) {
+      setMessage('エラー: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -259,7 +250,6 @@ export default function PunchPage() {
             <textarea
               value={remark}
               onChange={e => setRemark(e.target.value)}
-              onBlur={saveRemark}
               placeholder="現場の備考（自由記述）"
               rows={2}
               style={{ width: '100%', border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
@@ -311,6 +301,23 @@ export default function PunchPage() {
             取得合計：<span style={{ color: '#1855A0', fontWeight: 500 }}>{breakTotal}分</span>
             {breakLabel !== 'なし' && `（${breakLabel}）`}
           </div>
+        </div>
+
+        {/* 登録ボタン */}
+        <div style={{ padding: '4px 16px 12px' }}>
+          <button
+            onClick={saveAll}
+            disabled={loading || !alreadyIn}
+            style={{
+              width: '100%', borderRadius: 10, padding: '14px 0',
+              fontSize: 15, fontWeight: 600, cursor: (loading || !alreadyIn) ? 'default' : 'pointer',
+              border: 'none',
+              background: (loading || !alreadyIn) ? '#ccc' : '#1855A0',
+              color: '#fff',
+            }}
+          >
+            {loading ? '登録中...' : '現場・休憩・備考を登録'}
+          </button>
         </div>
 
         {/* メッセージ */}
