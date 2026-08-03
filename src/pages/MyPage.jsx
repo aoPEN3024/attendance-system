@@ -312,7 +312,7 @@ export default function MyPage() {
 
           {message && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: message.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: message.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{message}</div>}
           {!holMode && !subMode && (
-            <button onClick={handleQuickSave} style={{ ...s.saveBtn, background: '#1A7A4A', marginBottom: 8 }}>
+            <button onClick={handleQuickSave} style={{ ...s.saveBtn, background: '#1A7A4A', color: '#fff', marginBottom: 8 }}>
               休憩・現場・備考のみ保存（申請不要）
             </button>
           )}
