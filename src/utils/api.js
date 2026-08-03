@@ -96,7 +96,7 @@ export const api = {
     const query = new URLSearchParams(params).toString();
     const res = await fetch(`${GAS_URL}?${query}`, { redirect: 'follow' });
     const csv = await res.text();
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
