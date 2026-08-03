@@ -90,8 +90,13 @@ export const api = {
     gasRequest({ action: 'attendance/substitute/balance' }),
 
  adminExportCsv: async (yearMonth, type, targetEmployeeId) => {
-    const data = await gasRequest({ action: 'admin/export/csv', yearMonth, type, ...(targetEmployeeId ? { targetEmployeeId } : {}) });
-    const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8;' });
+    const token = localStorage.getItem('token');
+    const params = { action: 'admin/export/csv', token, yearMonth, type };
+    if (targetEmployeeId) params.targetEmployeeId = targetEmployeeId;
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${GAS_URL}?${query}`, { redirect: 'follow' });
+    const csv = await res.text();
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
