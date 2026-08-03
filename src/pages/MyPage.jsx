@@ -66,6 +66,7 @@ export default function MyPage() {
   const [editSites, setEditSites]   = useState([{siteId:'',minutes:''},{siteId:'',minutes:''},{siteId:'',minutes:''}]);
   const [siteOptions, setSiteOptions] = useState([]);
   const [editBreaks, setEditBreaks] = useState({ am: false, noon: false, pm: false });
+  const [editRemark, setEditRemark] = useState('');
   const [holMode, setHolMode]       = useState(false);
   const [subMode, setSubMode]       = useState(null);
   const [reason, setReason]         = useState('');
@@ -110,6 +111,7 @@ export default function MyPage() {
     setEditRow({ date, ...(row || {}) });
     setEditFields({ clockIn: row?.clockIn || '', clockOut: row?.clockOut || '' });
     setEditBreaks({ am: row?.breaks?.am || false, noon: row?.breaks?.noon || false, pm: row?.breaks?.pm || false });
+    setEditRemark(row?.remark || '');
     setEditSites([
       { siteId: row?.site1Id || '', days: minToDays(row?.site1Min) },
       { siteId: row?.site2Id || '', days: minToDays(row?.site2Min) },
@@ -156,6 +158,27 @@ export default function MyPage() {
         setMessage('申請を送信しました');
       }
       await loadMonthly();
+      setTimeout(closeEdit, 1500);
+    } catch (err) {
+      setMessage('エラー: ' + err.message);
+    }
+  };
+
+  // 休憩・現場・備考のみ即保存（申請不要）
+  const handleQuickSave = async () => {
+    setMessage('');
+    if (!editRow.clockIn) { setMessage('エラー: この日は打刻がないため、まず出退勤の申請が必要です'); return; }
+    const sitesForApi = editSites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
+    try {
+      await api.punch('updateSites', editRow.date, '00:00', sitesForApi, {});
+      await api.punch('updateBreak', editRow.date, '00:00', sitesForApi, {
+        breakAm: editBreaks.am ? 'true' : 'false',
+        breakNoon: editBreaks.noon ? 'true' : 'false',
+        breakPm: editBreaks.pm ? 'true' : 'false',
+      });
+      await api.updateRemark(editRow.date, editRemark);
+      await loadMonthly();
+      setMessage('保存しました');
       setTimeout(closeEdit, 1500);
     } catch (err) {
       setMessage('エラー: ' + err.message);
@@ -250,6 +273,9 @@ export default function MyPage() {
               </button>
             ))}
           </div>
+          <div style={s.flabel}>現場の備考</div>
+          <textarea value={editRemark} onChange={e => setEditRemark(e.target.value)} placeholder="現場の備考（自由記述）" style={s.textarea} rows={2} />
+
           <div style={s.flabel}>申請理由</div>
           <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="例：打刻忘れのため" style={s.textarea} rows={2} />
 
@@ -285,6 +311,11 @@ export default function MyPage() {
           </div>
 
           {message && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: message.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: message.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{message}</div>}
+          {!holMode && !subMode && (
+            <button onClick={handleQuickSave} style={{ ...s.saveBtn, background: '#1A7A4A', marginBottom: 8 }}>
+              休憩・現場・備考のみ保存（申請不要）
+            </button>
+          )}
           <button onClick={handleSave} style={s.saveBtn}>
             {holMode ? '有給申請する' : subMode === 'work' ? '振替出勤申請する' : subMode === 'holiday' ? '振替休日申請する' : '申請・保存する'}
           </button>
