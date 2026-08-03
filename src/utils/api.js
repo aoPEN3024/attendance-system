@@ -89,12 +89,17 @@ export const api = {
   substituteBalance: () =>
     gasRequest({ action: 'attendance/substitute/balance' }),
 
-  adminExportCsv: (yearMonth, type, targetEmployeeId) => {
-    const token = localStorage.getItem('token');
-    const params = { action: 'admin/export/csv', token, yearMonth, type };
-    if (targetEmployeeId) params.targetEmployeeId = targetEmployeeId;
-    const query = new URLSearchParams(params).toString();
-    window.open(`${GAS_URL}?${query}`);
+ adminExportCsv: async (yearMonth, type, targetEmployeeId) => {
+    const data = await gasRequest({ action: 'admin/export/csv', yearMonth, type, ...(targetEmployeeId ? { targetEmployeeId } : {}) });
+    const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type === 'summary' ? '全体集計' : '個人別'}_${yearMonth}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   },
 
   adminEmployeesList: () =>
