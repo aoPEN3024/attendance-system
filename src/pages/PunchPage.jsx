@@ -35,6 +35,7 @@ export default function PunchPage() {
   const [todayData, setTodayData]     = useState(null);
   const [siteOptions, setSiteOptions] = useState([]);
   const [sites, setSites]             = useState([emptySite(), emptySite(), emptySite()]);
+  const [remark, setRemark] = useState('');
   const [breaks, setBreaks]           = useState({ breakAm: false, breakNoon: false, breakPm: false });
   const [loading, setLoading]         = useState(false);
   const [message, setMessage]         = useState('');
@@ -63,6 +64,7 @@ export default function PunchPage() {
         { siteId: data.site2Id || '', days: minToDays(data.site2Min) },
         { siteId: data.site3Id || '', days: minToDays(data.site3Min) },
       ]);
+      setRemark(data.remark || '');
       if (data.breaks) {
         setBreaks({
           breakAm:   data.breaks.am   === true,
@@ -114,6 +116,14 @@ export default function PunchPage() {
       } catch (err) {
         console.log('現場更新エラー:', err.message);
       }
+    }
+  };
+  const saveRemark = async () => {
+    if (!todayData?.clockIn) return;
+    try {
+      await api.updateRemark(today(), remark);
+    } catch (err) {
+      console.log('備考更新エラー:', err.message);
     }
   };
 
@@ -245,6 +255,16 @@ export default function PunchPage() {
               </div>
             </div>
           ))}
+          <div style={{ ...s.selectWrap, marginTop: 4 }}>
+            <textarea
+              value={remark}
+              onChange={e => setRemark(e.target.value)}
+              onBlur={saveRemark}
+              placeholder="現場の備考（自由記述）"
+              rows={2}
+              style={{ width: '100%', border: 'none', background: 'none', fontSize: 13, color: '#222', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+            />
+          </div>
           {/* 振替出勤 */}
           <div style={s.sectionLabel}>振替出勤</div>
           <div style={{ marginBottom: 12 }}>
