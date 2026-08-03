@@ -43,6 +43,11 @@ export const api = {
       ...breaks,
       ...(substituteType ? { substituteType } : {}),
     }),
+    updateRemark: (date, remark) =>
+    gasRequest({
+      action: 'attendance/punch', type: 'updateRemark', date,
+      time: '00:00', remark,
+    }),
 
   apply: (date, clockIn, clockOut, sites, breaks, reason, substituteType) =>
     gasRequest({
