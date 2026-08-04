@@ -150,35 +150,33 @@ export default function MyPage() {
         );
         setMessage('振替休日申請を送信しました');
       } else {
-        await api.apply(
-          editRow.date, editFields.clockIn, editFields.clockOut, editSitesForApi,
-          { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
-          reason || '修正申請'
-        );
-        setMessage('申請を送信しました');
+        // 出退勤時刻が元から変わっているか判定
+        const origIn  = editRow.clockIn  || '';
+        const origOut = editRow.clockOut || '';
+        const timeChanged = (editFields.clockIn || '') !== origIn || (editFields.clockOut || '') !== origOut;
+
+        if (timeChanged || !editRow.clockIn) {
+          // 時刻変更あり（または未打刻日）→ 申請
+          await api.apply(
+            editRow.date, editFields.clockIn, editFields.clockOut, editSitesForApi,
+            { breakAm: editBreaks.am ? 'true' : 'false', breakNoon: editBreaks.noon ? 'true' : 'false', breakPm: editBreaks.pm ? 'true' : 'false' },
+            reason || '修正申請'
+          );
+          setMessage('申請を送信しました');
+        } else {
+          // 現場・休憩・備考のみ → 即保存（承認不要）
+          const sitesForApi = editSitesForApi;
+          await api.punch('updateSites', editRow.date, '00:00', sitesForApi, {});
+          await api.punch('updateBreak', editRow.date, '00:00', sitesForApi, {
+            breakAm: editBreaks.am ? 'true' : 'false',
+            breakNoon: editBreaks.noon ? 'true' : 'false',
+            breakPm: editBreaks.pm ? 'true' : 'false',
+          });
+          await api.updateRemark(editRow.date, editRemark);
+          setMessage('保存しました');
+        }
       }
       await loadMonthly();
-      setTimeout(closeEdit, 1500);
-    } catch (err) {
-      setMessage('エラー: ' + err.message);
-    }
-  };
-
-  // 休憩・現場・備考のみ即保存（申請不要）
-  const handleQuickSave = async () => {
-    setMessage('');
-    if (!editRow.clockIn) { setMessage('エラー: この日は打刻がないため、まず出退勤の申請が必要です'); return; }
-    const sitesForApi = editSites.map(s => ({ siteId: s.siteId, minutes: daysToMin(s.days) }));
-    try {
-      await api.punch('updateSites', editRow.date, '00:00', sitesForApi, {});
-      await api.punch('updateBreak', editRow.date, '00:00', sitesForApi, {
-        breakAm: editBreaks.am ? 'true' : 'false',
-        breakNoon: editBreaks.noon ? 'true' : 'false',
-        breakPm: editBreaks.pm ? 'true' : 'false',
-      });
-      await api.updateRemark(editRow.date, editRemark);
-      await loadMonthly();
-      setMessage('保存しました');
       setTimeout(closeEdit, 1500);
     } catch (err) {
       setMessage('エラー: ' + err.message);
@@ -311,13 +309,8 @@ export default function MyPage() {
           </div>
 
           {message && <div style={{ fontSize: 13, padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: message.startsWith('エラー') ? '#FCEBEB' : '#E6F7EE', color: message.startsWith('エラー') ? '#A32D2D' : '#1A7A4A' }}>{message}</div>}
-          {!holMode && !subMode && (
-            <button onClick={handleQuickSave} style={{ ...s.saveBtn, background: '#1A7A4A', color: '#fff', marginBottom: 8 }}>
-              休憩・現場・備考のみ保存（申請不要）
-            </button>
-          )}
           <button onClick={handleSave} style={s.saveBtn}>
-            {holMode ? '有給申請する' : subMode === 'work' ? '振替出勤申請する' : subMode === 'holiday' ? '振替休日申請する' : '申請・保存する'}
+            {holMode ? '有給申請する' : subMode === 'work' ? '振替出勤申請する' : subMode === 'holiday' ? '振替休日申請する' : '保存する'}
           </button>
           <button onClick={closeEdit} style={s.cancelBtn}>キャンセル</button>
 
