@@ -20,7 +20,7 @@ async function gasRequest(params) {
       sessionExpiredHandled = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      alert('セッションの有効期限が切れました。再度ログインしてください。');
+      localStorage.setItem('sessionExpired', '1');
       window.location.reload();
       return;
     }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage({ onLogin }) {
@@ -7,6 +7,14 @@ export default function LoginPage({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [expiredNotice, setExpiredNotice] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem('sessionExpired')) {
+      setExpiredNotice(true);
+      localStorage.removeItem('sessionExpired');
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,6 +38,11 @@ export default function LoginPage({ onLogin }) {
           <p style={{ fontSize: 13, color: '#888', margin: '4px 0 0' }}>社員IDとパスワードでログイン</p>
         </div>
         <form onSubmit={handleSubmit}>
+          {expiredNotice && (
+            <div style={{ fontSize: 13, color: '#185FA5', background: '#E6F1FB', borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
+              セッションの期限が切れたためログアウトしました。再度ログインしてください。
+            </div>
+          )}
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 4 }}>社員ID</label>
             <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} placeholder="例: EMP001" required style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', borderRadius: 8, border: '0.5px solid #ccc', fontSize: 14 }} />
